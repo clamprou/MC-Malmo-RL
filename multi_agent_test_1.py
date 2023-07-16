@@ -23,8 +23,10 @@ NUM_AGENTS = max(1, agents_requested - 1) # Will be NUM_AGENTS robots running ar
 NUM_MOBS = NUM_AGENTS * 4
 
 # Create the rest of the agent hosts - one for each robot, plus one to give a bird's-eye view:
-agent_hosts += [MalmoPython.AgentHost() for x in range(1, NUM_AGENTS + 1) ]
-
+if agents_requested == 1:
+    agent_hosts += [MalmoPython.AgentHost() for x in range(1, NUM_AGENTS)]
+else:
+    agent_hosts += [MalmoPython.AgentHost() for x in range(1, NUM_AGENTS + 1)]
 # Set up debug output:
 for ah in agent_hosts:
     ah.setDebugOutput(DEBUG)    # Turn client-pool connection messages on/off.
@@ -36,18 +38,22 @@ else:
     print = functools.partial(print, flush=True)
 
 client_pool = MalmoPython.ClientPool()
-for x in range(10000, 10000 + NUM_AGENTS + 1):
-    client_pool.add( MalmoPython.ClientInfo('127.0.0.1', x) )
+if agents_requested == 1:
+    for x in range(10000, 10000 + NUM_AGENTS):
+        client_pool.add(MalmoPython.ClientInfo('127.0.0.1', x))
+else:
+    for x in range(10000, 10000 + NUM_AGENTS + 1):
+        client_pool.add(MalmoPython.ClientInfo('127.0.0.1', x))
 
 # Keep score of how our robots are doing:
-survival_scores = [0 for x in range(NUM_AGENTS)]    # Lasted to the end of the mission without dying.
+survival_time_scores = [0 for x in range(NUM_AGENTS)]    # Lasted to the end of the mission without dying.
 zombie_kill_scores = [0 for x in range(NUM_AGENTS)] # Good! Help rescue humanity from zombie-kind.
 player_kill_scores = [0 for x in range(NUM_AGENTS)] # Bad! Don't kill the other players!
 
 num_missions = 5 if INTEGRATION_TEST_MODE else 30000
 for mission_no in range(1, num_missions+1):
     print("Running mission #" + str(mission_no))
-    my_mission = MalmoPython.MissionSpec(getXML(NUM_AGENTS, "true" if mission_no == 1 else "false"), True)
+    my_mission = MalmoPython.MissionSpec(getXML(NUM_AGENTS, "true" if mission_no == 1 else "false", agents_requested), True)
     experimentID = str(uuid.uuid4())
     for i in range(len(agent_hosts)):
         safeStartMission(agent_hosts[i], my_mission, client_pool, MalmoPython.MissionRecordSpec(), i, experimentID)
@@ -72,6 +78,8 @@ for mission_no in range(1, num_missions+1):
             if world_state.is_mission_running and world_state.number_of_observations_since_last_state > 0:
                 unresponsive_count[i] = 10
                 ob = json.loads(world_state.observations[-1].text)
+                if ob[u'TimeAlive'] != 0:
+                    survival_time_scores[i] = ob[u'TimeAlive']
                 if "Life" in ob:
                     life = ob[u'Life']
                     if life != current_life[i]:
@@ -96,12 +104,6 @@ for mission_no in range(1, num_missions+1):
     if not timed_out:
         # All agents except the watcher have died.
         agent_hosts[-1].sendCommand("quit")
-    else:
-        # We timed out. Bonus score to any agents that survived!
-        for i in range(NUM_AGENTS):
-            if unresponsive_count[i] > 0:
-                print("SURVIVOR: " + agentName(i))
-                survival_scores[i] += 1
 
     print("Waiting for mission to end ", end=' ')
     # Mission should have ended already, but we want to wait until all the various agent hosts
@@ -117,7 +119,7 @@ for mission_no in range(1, num_missions+1):
                 hasEnded = False  # all not good
 
     win_counts = [0 for robot in range(NUM_AGENTS)]
-    winner_survival = survival_scores.index(max(survival_scores))
+    winner_survival = survival_time_scores.index(max(survival_time_scores))
     winner_zombies = zombie_kill_scores.index(max(zombie_kill_scores))
     winner_players = player_kill_scores.index(max(player_kill_scores))
     win_counts[winner_survival] += 1
@@ -126,7 +128,7 @@ for mission_no in range(1, num_missions+1):
 
     print()
     print("=========================================")
-    print("Survival scores: ", survival_scores, "Winner: ", agentName(winner_survival))
+    print("Survival time scores: ", survival_time_scores, "Winner: ", agentName(winner_survival))
     print("Zombie kill scores: ", zombie_kill_scores, "Winner: ", agentName(winner_zombies))
     print("Player kill scores: ", player_kill_scores, "Winner: ", agentName(winner_players))
     print("=========================================")

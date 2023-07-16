@@ -84,13 +84,13 @@ def spawnZombies(mobs, agent):
     for _ in range(mobs):
         agent.sendCommand(
             "chat /summon Zombie "
-            + str(np.random.randint(-18, 18))
+            + str(np.random.randint(-15, 15))
             + " 202 "
-            + str(np.random.randint(-18, 18))
+            + str(np.random.randint(-15, 15))
             + " {HealF:10.0f}"
         )
 
-def getXML(agents, reset):
+def getXML(agents, reset, requested):
     xml = '''<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
     <Mission xmlns="http://ProjectMalmo.microsoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <About>
@@ -120,7 +120,7 @@ def getXML(agents, reset):
         xml += '''<AgentSection mode="Survival">
         <Name>''' + agentName(i) + '''</Name>
         <AgentStart>
-          <Placement x="''' + str(random.randint(-17,17)) + '''" y="204" z="''' + str(random.randint(-17,17)) + '''"/>
+          <Placement x="''' + str(random.randint(-7,7)) + '''" y="204" z="''' + str(random.randint(-7,7)) + '''"/>
           <Inventory>
             <InventoryObject type="diamond_sword" slot="0" quantity="1"/>
           </Inventory>
@@ -140,20 +140,21 @@ def getXML(agents, reset):
         </AgentHandlers>
       </AgentSection>'''
 
-    xml += '''<AgentSection mode="Creative">
-        <Name>TheWatcher</Name>
-        <AgentStart>
-          <Placement x="0.5" y="228" z="0.5" pitch="90"/>
-        </AgentStart>
-        <AgentHandlers>
-          <ContinuousMovementCommands turnSpeedDegs="360"/>
-          <MissionQuitCommands/>
-          <VideoProducer>
-            <Width>640</Width>
-            <Height>640</Height>
-          </VideoProducer>
-        </AgentHandlers>
-      </AgentSection>'''
+    if requested != 1:
+        xml += '''<AgentSection mode="Creative">
+            <Name>TheWatcher</Name>
+            <AgentStart>
+              <Placement x="0.5" y="228" z="0.5" pitch="90"/>
+            </AgentStart>
+            <AgentHandlers>
+              <ContinuousMovementCommands turnSpeedDegs="360"/>
+              <MissionQuitCommands/>
+              <VideoProducer>
+                <Width>640</Width>
+                <Height>640</Height>
+              </VideoProducer>
+            </AgentHandlers>
+          </AgentSection>'''
 
     xml += '</Mission>'
     return xml
