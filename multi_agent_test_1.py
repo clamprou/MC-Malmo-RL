@@ -67,7 +67,11 @@ for mission_no in range(1, num_missions+1):
     num_responsive_agents = lambda: sum([urc > 0 for urc in unresponsive_count])
 
     spawnZombies(NUM_MOBS, agent_hosts[0])
+    agent_hosts[0].sendCommand("chat /gamerule naturalRegeneration false")
+    agent_hosts[0].sendCommand("chat /difficulty 1")
 
+    spawnInterval = 7
+    next_print_time = time.time() + spawnInterval
     timed_out = False
     while num_responsive_agents() > 0 and not timed_out:
         for i in range(NUM_AGENTS):
@@ -91,8 +95,8 @@ for mission_no in range(1, num_missions+1):
                     curr_zombies_killed = abs(zombie_kill_scores[i] - all_zombies_killed)
                     zombie_kill_scores[i] = all_zombies_killed
                     if curr_zombies_killed != 0:
-                        # Every time a zombie is killed we spawn it back and +1 to make it more difficult
-                        spawnZombies(curr_zombies_killed + 1, agent_hosts[0])
+                        # Every time a zombie is killed we spawn it back
+                        spawnZombies(curr_zombies_killed, agent_hosts[0])
             elif world_state.number_of_observations_since_last_state == 0:
                 unresponsive_count[i] -= 1
             if world_state.number_of_rewards_since_last_state > 0:
@@ -100,6 +104,12 @@ for mission_no in range(1, num_missions+1):
                     print("Reward:" + str(rew.getValue()))
 
         time.sleep(0.05)
+        # Spawn 1 Zombie every 7 seconds and multiply it by 0.9... decrease it
+        current_time = time.time()
+        if current_time >= next_print_time:
+            spawnZombies(1, agent_hosts[0])
+            spawnInterval *= 0.95
+            next_print_time = current_time + spawnInterval
 
     if not timed_out:
         # All agents except the watcher have died.

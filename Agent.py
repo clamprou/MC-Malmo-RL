@@ -108,7 +108,7 @@ def getXML(agents, reset, requested):
         <ServerHandlers>
           <FlatWorldGenerator forceReset="'''+reset+'''" generatorString="" seed=""/>
           <DrawingDecorator>
-            <DrawCuboid x1="-19" y1="200" z1="-19" x2="19" y2="235" z2="19" type="wool"/>
+            <DrawCuboid x1="-19" y1="200" z1="-19" x2="19" y2="235" z2="19" type="wool" colour="ORANGE"/>
             <DrawCuboid x1="-18" y1="202" z1="-18" x2="18" y2="247" z2="18" type="air"/>
             <DrawBlock x="0" y="226" z="0" type="fence"/>
             <DrawCuboid x1="-19" y1="235" z1="-19" x2="19" y2="255" z2="19" type="wool"/>
@@ -122,7 +122,11 @@ def getXML(agents, reset, requested):
         <AgentStart>
           <Placement x="''' + str(random.randint(-7,7)) + '''" y="204" z="''' + str(random.randint(-7,7)) + '''"/>
           <Inventory>
-            <InventoryObject type="diamond_sword" slot="0" quantity="1"/>
+            <InventoryBlock quantity="1" slot="0" type="diamond_sword" />
+            <InventoryBlock quantity="1" slot="39" type="iron_helmet" />
+            <InventoryBlock quantity="1" slot="38" type="iron_chestplate" />
+            <InventoryBlock quantity="1" slot="37" type="iron_leggings" />
+            <InventoryBlock quantity="1" slot="36" type="iron_boots" />
           </Inventory>
         </AgentStart>
         <AgentHandlers>
@@ -132,6 +136,10 @@ def getXML(agents, reset, requested):
             <RewardForDamagingEntity>
                 <Mob reward="1" type="Zombie"/>
             </RewardForDamagingEntity>
+            <VideoProducer want_depth="false">
+               <Width>800</Width>
+               <Height>600</Height>
+            </VideoProducer>
           <ObservationFromNearbyEntities>
             <Range name="entities" xrange="40" yrange="2" zrange="40"/>
           </ObservationFromNearbyEntities>
