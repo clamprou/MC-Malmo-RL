@@ -6,7 +6,7 @@ import json
 import os
 import sys
 import time
-from Agent import getXML, safeStartMission, safeWaitForStart, agentName, spawnZombies, parseCommandOptions
+from utils.agent_functionality import getXML, safeStartMission, safeWaitForStart, agentName, spawnZombies, parseCommandOptions
 import uuid
 from collections import namedtuple
 
@@ -23,7 +23,7 @@ DEBUG = agent_hosts[0].receivedArgument("debug")
 INTEGRATION_TEST_MODE = agent_hosts[0].receivedArgument("test")
 agents_requested = agent_hosts[0].getIntArgument("agents")
 NUM_AGENTS = max(1, agents_requested - 1) # Will be NUM_AGENTS robots running around, plus one static observer.
-NUM_MOBS = NUM_AGENTS * 5
+NUM_MOBS = NUM_AGENTS * 2
 
 # Create the rest of the agent hosts - one for each robot, plus one to give a bird's-eye view:
 if agents_requested == 1:
@@ -57,7 +57,7 @@ player_kill_scores = [0 for x in range(NUM_AGENTS)] # Bad! Don't kill the other 
 num_missions = 5 if INTEGRATION_TEST_MODE else 30000
 for mission_no in range(1, num_missions+1):
     print("Running mission #" + str(mission_no))
-    my_mission = MalmoPython.MissionSpec(getXML(NUM_AGENTS, "false", agents_requested, str(msPerTick)), True)
+    my_mission = MalmoPython.MissionSpec(getXML(NUM_AGENTS, "true" if mission_no == 1 else "false", agents_requested, str(msPerTick)), True)
     experimentID = str(uuid.uuid4())
     for i in range(len(agent_hosts)):
         safeStartMission(agent_hosts[i], my_mission, client_pool, MalmoPython.MissionRecordSpec(), i, experimentID)
@@ -98,10 +98,13 @@ for mission_no in range(1, num_missions+1):
                     # curr_zombies_killed = abs(zombie_kill_scores[i] - all_zombies_killed)
                     # zombie_kill_scores[i] = all_zombies_killed
                     # if curr_zombies_killed != 0:
-                    #     # Every time a zombie is killed we spawn it back
+                    #     # Everey time a zombie is killed we spawn it back
                     #     spawnZombies(curr_zombies_killed, agent_hosts[0])
                 if "XPos" in ob and "ZPos" in ob:
                     current_pos[i] = (ob[u'XPos'], ob[u'ZPos'])
+                if ob["WorldTime"] > 13100 and (not"entities" in ob or all(d.get('name') != 'Zombie' for d in ob["entities"])):
+                    timed_out = True
+                    # TODO end mission
             elif world_state.number_of_observations_since_last_state == 0:
                 unresponsive_count[i] -= 1
             if world_state.number_of_rewards_since_last_state > 0:
