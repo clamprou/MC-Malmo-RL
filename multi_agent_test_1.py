@@ -12,6 +12,9 @@ from collections import namedtuple
 
 EntityInfo = namedtuple('EntityInfo', 'x, y, z, name')
 
+# TODO msPerTick change dynamically
+msPerTick = 50
+
 # Create one agent host for parsing:
 agent_hosts = [MalmoPython.AgentHost()]
 parseCommandOptions(agent_hosts[0])
@@ -20,7 +23,7 @@ DEBUG = agent_hosts[0].receivedArgument("debug")
 INTEGRATION_TEST_MODE = agent_hosts[0].receivedArgument("test")
 agents_requested = agent_hosts[0].getIntArgument("agents")
 NUM_AGENTS = max(1, agents_requested - 1) # Will be NUM_AGENTS robots running around, plus one static observer.
-NUM_MOBS = NUM_AGENTS * 4
+NUM_MOBS = NUM_AGENTS * 5
 
 # Create the rest of the agent hosts - one for each robot, plus one to give a bird's-eye view:
 if agents_requested == 1:
@@ -46,6 +49,7 @@ else:
         client_pool.add(MalmoPython.ClientInfo('127.0.0.1', x))
 
 # Keep score of how our robots are doing:
+survival_scores = [0 for x in range(NUM_AGENTS)]    # Lasted to the end of the mission without dying.
 survival_time_scores = [0 for x in range(NUM_AGENTS)]    # Lasted to the end of the mission without dying.
 zombie_kill_scores = [0 for x in range(NUM_AGENTS)] # Good! Help rescue humanity from zombie-kind.
 player_kill_scores = [0 for x in range(NUM_AGENTS)] # Bad! Don't kill the other players!
@@ -53,7 +57,7 @@ player_kill_scores = [0 for x in range(NUM_AGENTS)] # Bad! Don't kill the other 
 num_missions = 5 if INTEGRATION_TEST_MODE else 30000
 for mission_no in range(1, num_missions+1):
     print("Running mission #" + str(mission_no))
-    my_mission = MalmoPython.MissionSpec(getXML(NUM_AGENTS, "true" if mission_no == 1 else "false", agents_requested), True)
+    my_mission = MalmoPython.MissionSpec(getXML(NUM_AGENTS, "false", agents_requested, str(msPerTick)), True)
     experimentID = str(uuid.uuid4())
     for i in range(len(agent_hosts)):
         safeStartMission(agent_hosts[i], my_mission, client_pool, MalmoPython.MissionRecordSpec(), i, experimentID)
@@ -62,6 +66,7 @@ for mission_no in range(1, num_missions+1):
     time.sleep(1)
     running = True
     current_life = [20 for x in range(NUM_AGENTS)]
+    current_pos = [(0,0) for x in range(NUM_AGENTS)]
     # When an agent is killed, it stops getting observations etc. Track this, so we know when to bail.
     unresponsive_count = [10 for x in range(NUM_AGENTS)]
     num_responsive_agents = lambda: sum([urc > 0 for urc in unresponsive_count])
@@ -70,8 +75,6 @@ for mission_no in range(1, num_missions+1):
     agent_hosts[0].sendCommand("chat /gamerule naturalRegeneration false")
     agent_hosts[0].sendCommand("chat /difficulty 1")
 
-    spawnInterval = 7
-    next_print_time = time.time() + spawnInterval
     timed_out = False
     while num_responsive_agents() > 0 and not timed_out:
         for i in range(NUM_AGENTS):
@@ -91,12 +94,14 @@ for mission_no in range(1, num_missions+1):
                 if "PlayersKilled" in ob:
                     player_kill_scores[i] = -ob[u'PlayersKilled']
                 if "MobsKilled" in ob:
-                    all_zombies_killed = ob[u'MobsKilled']
-                    curr_zombies_killed = abs(zombie_kill_scores[i] - all_zombies_killed)
-                    zombie_kill_scores[i] = all_zombies_killed
-                    if curr_zombies_killed != 0:
-                        # Every time a zombie is killed we spawn it back
-                        spawnZombies(curr_zombies_killed, agent_hosts[0])
+                    zombie_kill_scores[i] = ob[u'MobsKilled']
+                    # curr_zombies_killed = abs(zombie_kill_scores[i] - all_zombies_killed)
+                    # zombie_kill_scores[i] = all_zombies_killed
+                    # if curr_zombies_killed != 0:
+                    #     # Every time a zombie is killed we spawn it back
+                    #     spawnZombies(curr_zombies_killed, agent_hosts[0])
+                if "XPos" in ob and "ZPos" in ob:
+                    current_pos[i] = (ob[u'XPos'], ob[u'ZPos'])
             elif world_state.number_of_observations_since_last_state == 0:
                 unresponsive_count[i] -= 1
             if world_state.number_of_rewards_since_last_state > 0:
@@ -104,16 +109,16 @@ for mission_no in range(1, num_missions+1):
                     print("Reward:" + str(rew.getValue()))
 
         time.sleep(0.05)
-        # Spawn 1 Zombie every 7 seconds and multiply it by 0.9... decrease it
-        current_time = time.time()
-        if current_time >= next_print_time:
-            spawnZombies(1, agent_hosts[0])
-            spawnInterval *= 0.95
-            next_print_time = current_time + spawnInterval
-
+    print()
     if not timed_out:
         # All agents except the watcher have died.
         agent_hosts[-1].sendCommand("quit")
+    else:
+        # We timed out. Bonus score to any agents that survived!
+        for i in range(NUM_AGENTS):
+            if unresponsive_count[i] > 0:
+                print("SURVIVOR: " + agentName(i))
+                survival_scores[i] += 1
 
     print("Waiting for mission to end ", end=' ')
     # Mission should have ended already, but we want to wait until all the various agent hosts

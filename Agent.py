@@ -90,14 +90,14 @@ def spawnZombies(mobs, agent):
             + " {HealF:10.0f}"
         )
 
-def getXML(agents, reset, requested):
+def getXML(agents, reset, requested, msPerTick):
     xml = '''<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
     <Mission xmlns="http://ProjectMalmo.microsoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <About>
         <Summary/>
       </About>
       <ModSettings>
-        <MsPerTick>50</MsPerTick>
+        <MsPerTick>'''+msPerTick+'''</MsPerTick>
       </ModSettings>
       <ServerSection>
         <ServerInitialConditions>
@@ -111,8 +111,9 @@ def getXML(agents, reset, requested):
             <DrawCuboid x1="-19" y1="200" z1="-19" x2="19" y2="235" z2="19" type="wool" colour="ORANGE"/>
             <DrawCuboid x1="-18" y1="202" z1="-18" x2="18" y2="247" z2="18" type="air"/>
             <DrawBlock x="0" y="226" z="0" type="fence"/>
-            <DrawCuboid x1="-19" y1="235" z1="-19" x2="19" y2="255" z2="19" type="wool"/>
+            <DrawCuboid x1="-19" y1="235" z1="-19" x2="19" y2="255" z2="19" type="wool" colour="ORANGE"/>
           </DrawingDecorator>
+          <ServerQuitFromTimeUp description="" timeLimitMs="60000"/>
         </ServerHandlers>
       </ServerSection>
     '''
@@ -120,7 +121,7 @@ def getXML(agents, reset, requested):
         xml += '''<AgentSection mode="Survival">
         <Name>''' + agentName(i) + '''</Name>
         <AgentStart>
-          <Placement x="''' + str(random.randint(-7,7)) + '''" y="204" z="''' + str(random.randint(-7,7)) + '''"/>
+          <Placement x="''' + str(random.randint(-5,5)) + '''" y="204" z="''' + str(random.randint(-5,5)) + '''"/>
           <Inventory>
             <InventoryBlock quantity="1" slot="0" type="diamond_sword" />
             <InventoryBlock quantity="1" slot="39" type="iron_helmet" />
