@@ -77,6 +77,7 @@ for mission_no in range(1, num_missions+1):
 
     timed_out = False
     while num_responsive_agents() > 0 and not timed_out:
+        agent_hosts[0].sendCommand("turn 0.5")
         for i in range(NUM_AGENTS):
             ah = agent_hosts[i]
             world_state = ah.getWorldState()
