@@ -113,7 +113,7 @@ def getXML(agents, reset, requested, msPerTick):
             <DrawBlock x="0" y="226" z="0" type="fence"/>
             <DrawCuboid x1="-19" y1="235" z1="-19" x2="19" y2="255" z2="19" type="wool" colour="ORANGE"/>
           </DrawingDecorator>
-          <ServerQuitFromTimeUp description="" timeLimitMs="60000"/>
+          <ServerQuitFromTimeUp description="" timeLimitMs="50000"/>
         </ServerHandlers>
       </ServerSection>
     '''
