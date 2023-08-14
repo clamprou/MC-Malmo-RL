@@ -6,7 +6,7 @@ import json
 import os
 import sys
 import time
-from utils.agent_functionality import getXML, safeStartMission, safeWaitForStart, agentName, spawnZombies, parseCommandOptions
+from utils.malmo_agent import getXML, safeStartMission, safeWaitForStart, agentName, spawnZombies, parseCommandOptions
 import uuid
 from collections import namedtuple
 
