@@ -6,7 +6,7 @@ import json
 import os
 import sys
 import time
-from utils.malmo_agent import getXML, safeStartMission, safeWaitForStart, agentName, spawnZombies, parseCommandOptions
+from utils.malmo_agent import getXML, safeStartMission, safeWaitForStart, spawnZombies
 import uuid
 
 MS_PERTICK = 50
@@ -42,6 +42,7 @@ for mission_no in range(1, NUM_MISSIONS+1):
     unresponsive_count = 10
     spawnZombies(NUM_MOBS, agent)
     agent.sendCommand("chat /gamerule naturalRegeneration false")
+    agent.sendCommand("chat /gamerule doMobLoot false")
     agent.sendCommand("chat /difficulty 1")
 
     timed_out = False
@@ -71,11 +72,12 @@ for mission_no in range(1, NUM_MISSIONS+1):
             for rew in world_state.rewards:
                 print("Reward:" + str(rew.getValue()))
         time.sleep(0.05)
+    print()
     if not timed_out:
         # All agents except the watcher have died.
         agent.sendCommand("quit")
     else:
-        # We timed out. TODO something
+        # TODO not sure if its ok to quit here
         agent.sendCommand("quit")
 
     print("Waiting for mission to end ", end=' ')
@@ -87,7 +89,6 @@ for mission_no in range(1, NUM_MISSIONS+1):
         world_state = agent.getWorldState()
         if world_state.is_mission_running:
             hasEnded = False  # all not good
-        # TODO end mission
     print()
     print("=========================================")
     print("Player life: ", current_life)

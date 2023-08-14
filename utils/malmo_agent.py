@@ -1,26 +1,5 @@
-import os
-import sys
 import malmo.MalmoPython as MalmoPython
 import time
-import random
-import numpy as np
-
-
-def parseCommandOptions(agent):
-    agent.addOptionalFlag( "debug,d", "Display debug information.")
-    agent.addOptionalIntArgument("agents,n", "Number of agents to use, including observer.", 4)
-    try:
-        agent.parse( sys.argv )
-    except RuntimeError as e:
-        print('ERROR:',e)
-        print(agent.getUsage())
-        exit(1)
-    if agent.receivedArgument("help"):
-        print(agent.getUsage())
-        exit(0)
-
-def agentName(i):
-    return "Robot#" + str(i + 1)
 
 def safeStartMission(agent_host, my_mission, my_client_pool, my_mission_record, role, expId):
     used_attempts = 0
@@ -118,8 +97,8 @@ def getXML(agents, reset, requested, ms_pertick):
       </ServerSection>
     '''
     for i in range(agents):
-        xml += '''<AgentSection mode="Survival">
-        <Name>''' + agentName(i) + '''</Name>
+        xml += '''<AgentSection mode="Adventure">
+        <Name>Robot</Name>
         <AgentStart>
           <Placement x="''' + str(0) + '''" y="202" z="''' + str(0) + '''"/>
           <Inventory>
