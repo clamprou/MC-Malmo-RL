@@ -3,8 +3,7 @@ from __future__ import division
 from builtins import range
 import malmo.MalmoPython as MalmoPython
 import json
-import os
-import sys
+import functools
 import time
 from utils.malmo_agent import getXML, safeStartMission, safeWaitForStart, spawnZombies
 import uuid
@@ -15,11 +14,7 @@ NUM_AGENTS = 1
 NUM_MOBS = 3
 
 agent = MalmoPython.AgentHost()
-if sys.version_info[0] == 2:
-    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)  # flush print output immediately
-else:
-    import functools
-    print = functools.partial(print, flush=True)
+print = functools.partial(print, flush=True)
 
 client_pool = MalmoPython.ClientPool()
 client_pool.add(MalmoPython.ClientInfo('127.0.0.1', 10000))
