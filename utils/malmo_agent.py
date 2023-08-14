@@ -97,7 +97,7 @@ def getXML(agents, reset, requested, ms_pertick):
         <Summary/>
       </About>
       <ModSettings>
-        <ms_pertick>'''+ms_pertick+'''</ms_pertick>
+        <MsPerTick>'''+ms_pertick+'''</MsPerTick>
       </ModSettings>
       <ServerSection>
         <ServerInitialConditions>
