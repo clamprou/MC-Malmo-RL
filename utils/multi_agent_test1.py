@@ -9,24 +9,12 @@ import time
 from utils.malmo_agent import getXML, safeStartMission, safeWaitForStart, agentName, spawnZombies, parseCommandOptions
 import uuid
 
-# TODO MS_PERTICK change dynamically
 MS_PERTICK = 50
 NUM_MISSIONS = 5
 NUM_AGENTS = 1
 NUM_MOBS = 3
 
-# Create one agent host for parsing:
-agent_host = MalmoPython.AgentHost()
-parseCommandOptions(agent_host)
-
-DEBUG = agent_host.receivedArgument("debug")
-
-# Create the rest of the agent hosts - one for each robot, plus one to give a bird's-eye view:
 agent = MalmoPython.AgentHost()
-# Set up debug output:
-agent_host.setDebugOutput(DEBUG)    # Turn client-pool connection messages on/off.
-agent.setDebugOutput(DEBUG)    # Turn client-pool connection messages on/off.
-
 if sys.version_info[0] == 2:
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)  # flush print output immediately
 else:
@@ -48,11 +36,10 @@ for mission_no in range(1, NUM_MISSIONS+1):
     safeWaitForStart(agent)
     time.sleep(1)
     running = True
-    current_life = [20 for x in range(NUM_AGENTS)]
-    current_pos = [(0,0) for x in range(NUM_AGENTS)]
+    current_life = 20
+    current_pos = (0, 0)
     # When an agent is killed, it stops getting observations etc. Track this, so we know when to bail.
     unresponsive_count = 10
-
     spawnZombies(NUM_MOBS, agent)
     agent.sendCommand("chat /gamerule naturalRegeneration false")
     agent.sendCommand("chat /difficulty 1")
@@ -83,9 +70,7 @@ for mission_no in range(1, NUM_MISSIONS+1):
         if world_state.number_of_rewards_since_last_state > 0:
             for rew in world_state.rewards:
                 print("Reward:" + str(rew.getValue()))
-
         time.sleep(0.05)
-    print()
     if not timed_out:
         # All agents except the watcher have died.
         agent.sendCommand("quit")
@@ -94,8 +79,6 @@ for mission_no in range(1, NUM_MISSIONS+1):
         agent.sendCommand("quit")
 
     print("Waiting for mission to end ", end=' ')
-    # Mission should have ended already, but we want to wait until all the various agent hosts
-    # have had a chance to respond to their mission ended message.
     hasEnded = False
     while not hasEnded:
         hasEnded = True  # assume all good
@@ -105,12 +88,11 @@ for mission_no in range(1, NUM_MISSIONS+1):
         if world_state.is_mission_running:
             hasEnded = False  # all not good
         # TODO end mission
-
     print()
     print("=========================================")
+    print("Player life: ", current_life)
     print("Survival time score: ", survival_time_score)
     print("Zombie kill score: ", zombie_kill_score)
     print("=========================================")
     print()
-
     time.sleep(2)
