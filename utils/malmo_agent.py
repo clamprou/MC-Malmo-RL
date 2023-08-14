@@ -49,7 +49,7 @@ def safeStartMission(agent_host, my_mission, my_client_pool, my_mission_record, 
                     print("Will wait and retry.", max_attempts - used_attempts, "attempts left.")
                     time.sleep(2)
             else:
-                print("Other error:", e.message)
+                print("Other error:", e)
                 print("Waiting will not help here - bailing immediately.")
                 exit(1)
         if used_attempts == max_attempts:
@@ -57,15 +57,15 @@ def safeStartMission(agent_host, my_mission, my_client_pool, my_mission_record, 
             exit(1)
     print("startMission called okay.")
 
-def safeWaitForStart(agent_hosts):
+def safeWaitForStart(agent_host):
     print("Waiting for the mission to start", end=' ')
-    start_flags = [False for a in agent_hosts]
+    start_flag = False
     start_time = time.time()
     time_out = 120  # Allow a two minute timeout.
-    while not all(start_flags) and time.time() - start_time < time_out:
-        states = [a.peekWorldState() for a in agent_hosts]
-        start_flags = [w.has_mission_begun for w in states]
-        errors = [e for w in states for e in w.errors]
+    while not start_flag and time.time() - start_time < time_out:
+        state = agent_host.peekWorldState()
+        start_flag = state.has_mission_begun
+        errors = [e for e in state.errors]
         if len(errors) > 0:
             print("Errors waiting for mission start:")
             for e in errors:
