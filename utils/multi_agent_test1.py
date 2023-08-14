@@ -9,9 +9,9 @@ import time
 from utils.malmo_agent import getXML, safeStartMission, safeWaitForStart, agentName, spawnZombies, parseCommandOptions
 import uuid
 
-# TODO msPerTick change dynamically
-msPerTick = 50
-num_missions = 5
+# TODO MS_PERTICK change dynamically
+MS_PERTICK = 50
+NUM_MISSIONS = 5
 NUM_AGENTS = 1
 NUM_MOBS = 3
 
@@ -40,13 +40,11 @@ client_pool.add(MalmoPython.ClientInfo('127.0.0.1', 10000))
 survival_time_score = 0    # Lasted to the end of the mission without dying.
 zombie_kill_score = 0  # Good! Help rescue humanity from zombie-kind.
 
-for mission_no in range(1, num_missions+1):
+for mission_no in range(1, NUM_MISSIONS+1):
     print("Running mission #" + str(mission_no))
-    my_mission = MalmoPython.MissionSpec(getXML(NUM_AGENTS, "true" if mission_no == 1 else "false", NUM_AGENTS, str(msPerTick)), True)
+    my_mission = MalmoPython.MissionSpec(getXML(NUM_AGENTS, "true" if mission_no == 1 else "false", NUM_AGENTS, str(MS_PERTICK)), True)
     experimentID = str(uuid.uuid4())
-    # safeStartMission(agent_host, my_mission, client_pool, MalmoPython.MissionRecordSpec(), 1, experimentID)
     safeStartMission(agent, my_mission, client_pool, MalmoPython.MissionRecordSpec(), 0, experimentID)
-    # safeWaitForStart(agent_host)
     safeWaitForStart(agent)
     time.sleep(1)
     running = True
@@ -93,7 +91,7 @@ for mission_no in range(1, num_missions+1):
         agent.sendCommand("quit")
     else:
         # We timed out. TODO something
-        pass
+        agent.sendCommand("quit")
 
     print("Waiting for mission to end ", end=' ')
     # Mission should have ended already, but we want to wait until all the various agent hosts

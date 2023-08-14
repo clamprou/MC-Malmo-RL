@@ -90,14 +90,14 @@ def spawnZombies(mobs, agent):
             + " {HealF:10.0f}"
         )
 
-def getXML(agents, reset, requested, msPerTick):
+def getXML(agents, reset, requested, ms_pertick):
     xml = '''<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
     <Mission xmlns="http://ProjectMalmo.microsoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <About>
         <Summary/>
       </About>
       <ModSettings>
-        <MsPerTick>'''+msPerTick+'''</MsPerTick>
+        <ms_pertick>'''+ms_pertick+'''</ms_pertick>
       </ModSettings>
       <ServerSection>
         <ServerInitialConditions>
