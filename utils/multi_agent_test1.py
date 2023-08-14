@@ -36,11 +36,9 @@ else:
 client_pool = MalmoPython.ClientPool()
 client_pool.add(MalmoPython.ClientInfo('127.0.0.1', 10000))
 
-# Keep score of how our robots are doing:
-survival_scores = 0    # Lasted to the end of the mission without dying.
-survival_time_scores = 0    # Lasted to the end of the mission without dying.
-zombie_kill_scores = 0  # Good! Help rescue humanity from zombie-kind.
-player_kill_scores = 0  # Bad! Don't kill the other players!
+# Keep score of how our robot is doing:
+survival_time_score = 0    # Lasted to the end of the mission without dying.
+zombie_kill_score = 0  # Good! Help rescue humanity from zombie-kind.
 
 for mission_no in range(1, num_missions+1):
     print("Running mission #" + str(mission_no))
@@ -70,15 +68,13 @@ for mission_no in range(1, num_missions+1):
             unresponsive_count = 10
             ob = json.loads(world_state.observations[-1].text)
             if ob[u'TimeAlive'] != 0:
-                survival_time_scores = ob[u'TimeAlive']
+                survival_time_score = ob[u'TimeAlive']
             if "Life" in ob:
                 life = ob[u'Life']
                 if life != current_life:
                     current_life = life
-            if "PlayersKilled" in ob:
-                player_kill_scores = -ob[u'PlayersKilled']
             if "MobsKilled" in ob:
-                zombie_kill_scores = ob[u'MobsKilled']
+                zombie_kill_score = ob[u'MobsKilled']
             if "XPos" in ob and "ZPos" in ob:
                 current_pos = (ob[u'XPos'], ob[u'ZPos'])
             if ob["WorldTime"] > 13100 and (not"entities" in ob or all(d.get('name') != 'Zombie' for d in ob["entities"])):
@@ -96,11 +92,8 @@ for mission_no in range(1, num_missions+1):
         # All agents except the watcher have died.
         agent.sendCommand("quit")
     else:
-        # We timed out. Bonus score to any agents that survived!
-        for i in range(NUM_AGENTS):
-            if unresponsive_count > 0:
-                print("SURVIVOR: " + agentName(i))
-                survival_scores += 1
+        # We timed out. TODO something
+        pass
 
     print("Waiting for mission to end ", end=' ')
     # Mission should have ended already, but we want to wait until all the various agent hosts
@@ -117,9 +110,8 @@ for mission_no in range(1, num_missions+1):
 
     print()
     print("=========================================")
-    print("Survival time scores: ", survival_time_scores)
-    print("Zombie kill scores: ", zombie_kill_scores)
-    print("Player kill scores: ", player_kill_scores)
+    print("Survival time score: ", survival_time_score)
+    print("Zombie kill score: ", zombie_kill_score)
     print("=========================================")
     print()
 

@@ -84,9 +84,9 @@ def spawnZombies(mobs, agent):
     for _ in range(mobs):
         agent.sendCommand(
             "chat /summon Zombie "
-            + str(np.random.randint(-15, 15))
+            + str(0)
             + " 202 "
-            + str(np.random.randint(-15, 15))
+            + str(9)
             + " {HealF:10.0f}"
         )
 
@@ -121,7 +121,7 @@ def getXML(agents, reset, requested, msPerTick):
         xml += '''<AgentSection mode="Survival">
         <Name>''' + agentName(i) + '''</Name>
         <AgentStart>
-          <Placement x="''' + str(random.randint(-5,5)) + '''" y="204" z="''' + str(random.randint(-5,5)) + '''"/>
+          <Placement x="''' + str(0) + '''" y="202" z="''' + str(0) + '''"/>
           <Inventory>
             <InventoryBlock quantity="1" slot="0" type="diamond_sword" />
             <InventoryBlock quantity="1" slot="39" type="iron_helmet" />
