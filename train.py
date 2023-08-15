@@ -54,9 +54,8 @@ for mission_no in range(1, NUM_MISSIONS+1):
                 zombie_kill_score = ob[u'MobsKilled']
             if "XPos" in ob and "ZPos" in ob:
                 current_pos = (ob[u'XPos'], ob[u'ZPos'])
-            if not"entities" in ob or all(d.get('name') != 'Zombie' for d in ob["entities"]):
+            if all(d.get('name') != 'Zombie' for d in ob["entities"]):
                 all_zombies_died = True
-                # TODO end mission
         elif world_state.number_of_observations_since_last_state == 0:
             unresponsive_count -= 1
         if world_state.number_of_rewards_since_last_state > 0:
@@ -66,7 +65,7 @@ for mission_no in range(1, NUM_MISSIONS+1):
     print()
 
     agent.sendCommand("quit")
-
+    print("All Zombies Died") if all_zombies_died else print("Agent Died")
     print("Waiting for mission to end ", end=' ')
     hasEnded = False
     while not hasEnded:
