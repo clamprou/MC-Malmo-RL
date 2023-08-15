@@ -92,7 +92,6 @@ def getXML(agents, reset, requested, ms_pertick):
             <DrawBlock x="0" y="226" z="0" type="fence"/>
             <DrawCuboid x1="-19" y1="235" z1="-19" x2="19" y2="255" z2="19" type="wool" colour="ORANGE"/>
           </DrawingDecorator>
-          <ServerQuitFromTimeUp description="" timeLimitMs="50000"/>
         </ServerHandlers>
       </ServerSection>
     '''
@@ -116,10 +115,6 @@ def getXML(agents, reset, requested, ms_pertick):
             <RewardForDamagingEntity>
                 <Mob reward="1" type="Zombie"/>
             </RewardForDamagingEntity>
-            <VideoProducer want_depth="false">
-               <Width>800</Width>
-               <Height>600</Height>
-            </VideoProducer>
           <ObservationFromNearbyEntities>
             <Range name="entities" xrange="40" yrange="2" zrange="40"/>
           </ObservationFromNearbyEntities>

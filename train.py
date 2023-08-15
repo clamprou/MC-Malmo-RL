@@ -7,8 +7,8 @@ import time
 from malmo_agent import getXML, safeStartMission, safeWaitForStart, spawnZombies
 import uuid
 
-MS_PERTICK = 50
-NUM_MISSIONS = 5
+MS_PERTICK = 3
+NUM_MISSIONS = 10
 NUM_AGENTS = 1
 NUM_MOBS = 3
 
@@ -26,22 +26,21 @@ for mission_no in range(1, NUM_MISSIONS+1):
     experimentID = str(uuid.uuid4())
     safeStartMission(agent, my_mission, client_pool, MalmoPython.MissionRecordSpec(), 0, experimentID)
     safeWaitForStart(agent)
-    time.sleep(1)
+    time.sleep(0.05)
     running = True
     current_life = 20
     current_pos = (0, 0)
-    # When an agent is killed, it stops getting observations etc. Track this, so we know when to bail.
     unresponsive_count = 10
     spawnZombies(NUM_MOBS, agent)
     agent.sendCommand("chat /gamerule naturalRegeneration false")
     agent.sendCommand("chat /gamerule doMobLoot false")
     agent.sendCommand("chat /difficulty 1")
 
-    timed_out = False
-    while unresponsive_count > 0 and not timed_out:
+    time.sleep(0.05)
+    all_zombies_died = False
+    # if unresponsive_count <= 0 agent has died
+    while unresponsive_count > 0 and not all_zombies_died:
         world_state = agent.getWorldState()
-        if world_state.is_mission_running == False:
-            timed_out = True
         if world_state.is_mission_running and world_state.number_of_observations_since_last_state > 0:
             unresponsive_count = 10
             ob = json.loads(world_state.observations[-1].text)
@@ -55,8 +54,8 @@ for mission_no in range(1, NUM_MISSIONS+1):
                 zombie_kill_score = ob[u'MobsKilled']
             if "XPos" in ob and "ZPos" in ob:
                 current_pos = (ob[u'XPos'], ob[u'ZPos'])
-            if ob["WorldTime"] > 13100 and (not"entities" in ob or all(d.get('name') != 'Zombie' for d in ob["entities"])):
-                timed_out = True
+            if not"entities" in ob or all(d.get('name') != 'Zombie' for d in ob["entities"]):
+                all_zombies_died = True
                 # TODO end mission
         elif world_state.number_of_observations_since_last_state == 0:
             unresponsive_count -= 1
@@ -65,12 +64,8 @@ for mission_no in range(1, NUM_MISSIONS+1):
                 print("Reward:" + str(rew.getValue()))
         time.sleep(0.05)
     print()
-    if not timed_out:
-        # All agents except the watcher have died.
-        agent.sendCommand("quit")
-    else:
-        # TODO not sure if its ok to quit here
-        agent.sendCommand("quit")
+
+    agent.sendCommand("quit")
 
     print("Waiting for mission to end ", end=' ')
     hasEnded = False
@@ -88,4 +83,4 @@ for mission_no in range(1, NUM_MISSIONS+1):
     print("Zombie kill score: ", zombie_kill_score)
     print("=========================================")
     print()
-    time.sleep(2)
+    time.sleep(0.05)
