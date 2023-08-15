@@ -23,7 +23,7 @@ from __future__ import division
 
 from builtins import range
 from past.utils import old_div
-import MalmoPython
+import malmo.MalmoPython as MalmoPython
 import json
 import logging
 import math
