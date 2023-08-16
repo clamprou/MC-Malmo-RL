@@ -6,7 +6,7 @@ import uuid
 import malmo.MalmoPython as MalmoPython
 import time
 
-MS_PER_TICK = 3
+MS_PER_TICK = 1
 NUM_MISSIONS = 10
 NUM_AGENTS = 1
 NUM_MOBS = 3
@@ -27,7 +27,7 @@ class Agent:
 
     def start_mission(self, mission_no):
         print("Running mission #" + str(mission_no))
-        mission = MalmoPython.MissionSpec(self.__get_xml("true" if mission_no == 1 else "false"), True)
+        mission = MalmoPython.MissionSpec(self.__get_xml(), True)
         experimentID = str(uuid.uuid4())
         self.__safe_start_mission(mission, MalmoPython.MissionRecordSpec(), 0, experimentID)
         self.__safe_wait_for_start()
@@ -38,12 +38,12 @@ class Agent:
         self.malmo_agent.sendCommand("chat /difficulty 1")
         self.unresponsive_count = 10
         self.all_zombies_died = False
-        time.sleep(0.05)
 
     def is_mission_running(self):
         return self.unresponsive_count > 0 and not self.all_zombies_died
 
     def observe_state(self):
+        time.sleep(0.05)
         world_state = self.malmo_agent.getWorldState()
         if world_state.number_of_observations_since_last_state > 0:
             self.unresponsive_count = 10
@@ -65,6 +65,8 @@ class Agent:
         if world_state.number_of_rewards_since_last_state > 0:
             for rew in world_state.rewards:
                 print("Reward:" + str(rew.getValue()))
+        if self.current_life <= 10:
+            self.malmo_agent.sendCommand("chat /kill @e[type=!player]")
         time.sleep(0.05)
 
     def quit_mission(self):
@@ -159,7 +161,7 @@ class Agent:
                 + " {HealF:10.0f}"
             )
 
-    def __get_xml(self, reset):
+    def __get_xml(self):
         xml = '''<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
         <Mission xmlns="http://ProjectMalmo.microsoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
           <About>
@@ -175,7 +177,7 @@ class Agent:
               </Time>
             </ServerInitialConditions>
             <ServerHandlers>
-              <FlatWorldGenerator forceReset="''' + reset + '''" generatorString="" seed=""/>
+              <FlatWorldGenerator forceReset="false" generatorString="" seed=""/>
               <DrawingDecorator>
                 <DrawCuboid x1="-19" y1="200" z1="-19" x2="19" y2="235" z2="19" type="wool" colour="ORANGE"/>
                 <DrawCuboid x1="-18" y1="202" z1="-18" x2="18" y2="247" z2="18" type="air"/>
