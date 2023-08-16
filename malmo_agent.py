@@ -1,9 +1,7 @@
 from __future__ import print_function
 from __future__ import division
 from builtins import range
-import malmo.MalmoPython as MalmoPython
 import json
-import time
 import uuid
 import malmo.MalmoPython as MalmoPython
 import time
@@ -29,12 +27,12 @@ class Agent:
 
     def start_mission(self, mission_no):
         print("Running mission #" + str(mission_no))
-        my_mission = MalmoPython.MissionSpec(self.get_xml("true" if mission_no == 1 else "false", NUM_AGENTS), True)
+        mission = MalmoPython.MissionSpec(self.__get_xml("true" if mission_no == 1 else "false"), True)
         experimentID = str(uuid.uuid4())
-        self.__safe_start_mission(my_mission, self.client_pool, MalmoPython.MissionRecordSpec(), 0, experimentID)
+        self.__safe_start_mission(mission, MalmoPython.MissionRecordSpec(), 0, experimentID)
         self.__safe_wait_for_start()
         time.sleep(0.05)
-        self.spawn_zombies()
+        self.__spawn_zombies()
         self.malmo_agent.sendCommand("chat /gamerule naturalRegeneration false")
         self.malmo_agent.sendCommand("chat /gamerule doMobLoot false")
         self.malmo_agent.sendCommand("chat /difficulty 1")
@@ -61,7 +59,7 @@ class Agent:
             if "XPos" in ob and "ZPos" in ob:
                 self.current_pos = (ob[u'XPos'], ob[u'ZPos'])
             if all(d.get('name') != 'Zombie' for d in ob["entities"]):
-                all_zombies_died = True
+                self.all_zombies_died = True
         elif world_state.number_of_observations_since_last_state == 0:
             self.unresponsive_count -= 1
         if world_state.number_of_rewards_since_last_state > 0:
@@ -93,14 +91,14 @@ class Agent:
         print()
         time.sleep(0.05)
 
-    def __safe_start_mission(self, my_mission, my_client_pool, my_mission_record, role, expId):
+    def __safe_start_mission(self, mission, mission_record, role, expId):
         used_attempts = 0
         max_attempts = 5
         print("Calling startMission for role", role)
         while True:
             try:
                 # Attempt start:
-                self.malmo_agent.startMission(my_mission, my_client_pool, my_mission_record, role, expId)
+                self.malmo_agent.startMission(mission, self.client_pool, mission_record, role, expId)
                 break
             except MalmoPython.MissionException as e:
                 errorCode = e.details.errorCode
@@ -151,7 +149,7 @@ class Agent:
         print()
         print("Mission has started.")
 
-    def spawn_zombies(self):
+    def __spawn_zombies(self):
         for _ in range(NUM_MOBS):
             self.malmo_agent.sendCommand(
                 "chat /summon Zombie "
@@ -161,7 +159,7 @@ class Agent:
                 + " {HealF:10.0f}"
             )
 
-    def get_xml(self, reset, requested):
+    def __get_xml(self, reset):
         xml = '''<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
         <Mission xmlns="http://ProjectMalmo.microsoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
           <About>
@@ -215,7 +213,7 @@ class Agent:
             </AgentHandlers>
           </AgentSection>'''
 
-        if requested != 1:
+        if NUM_AGENTS != 1:
             xml += '''<AgentSection mode="Creative">
                 <Name>TheWatcher</Name>
                 <AgentStart>

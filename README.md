@@ -1,0 +1,1 @@
+To kill all zombies: /kill @e[type=!player]
