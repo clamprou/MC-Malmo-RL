@@ -8,7 +8,7 @@ import uuid
 import malmo.MalmoPython as MalmoPython
 import time
 
-MS_PERTICK = 3
+MS_PER_TICK = 3
 NUM_MISSIONS = 10
 NUM_AGENTS = 1
 NUM_MOBS = 3
@@ -27,15 +27,12 @@ class Agent:
         self.unresponsive_count = 10
         self.all_zombies_died = False
 
-    def is_agent_or_zombies_alive(self):
-        return self.unresponsive_count > 0 and not self.all_zombies_died
-
     def start_mission(self, mission_no):
         print("Running mission #" + str(mission_no))
-        my_mission = MalmoPython.MissionSpec(self.get_xml("true" if mission_no == 1 else "false", NUM_AGENTS, str(MS_PERTICK)), True)
+        my_mission = MalmoPython.MissionSpec(self.get_xml("true" if mission_no == 1 else "false", NUM_AGENTS), True)
         experimentID = str(uuid.uuid4())
-        self.safe_start_mission(my_mission, self.client_pool, MalmoPython.MissionRecordSpec(), 0, experimentID)
-        self.safe_wait_for_start()
+        self.__safe_start_mission(my_mission, self.client_pool, MalmoPython.MissionRecordSpec(), 0, experimentID)
+        self.__safe_wait_for_start()
         time.sleep(0.05)
         self.spawn_zombies()
         self.malmo_agent.sendCommand("chat /gamerule naturalRegeneration false")
@@ -45,7 +42,58 @@ class Agent:
         self.all_zombies_died = False
         time.sleep(0.05)
 
-    def safe_start_mission(self, my_mission, my_client_pool, my_mission_record, role, expId):
+    def is_mission_running(self):
+        return self.unresponsive_count > 0 and not self.all_zombies_died
+
+    def observe_state(self):
+        world_state = self.malmo_agent.getWorldState()
+        if world_state.number_of_observations_since_last_state > 0:
+            self.unresponsive_count = 10
+            ob = json.loads(world_state.observations[-1].text)
+            if ob[u'TimeAlive'] != 0:
+                self.survival_time_score = ob[u'TimeAlive']
+            if "Life" in ob:
+                life = ob[u'Life']
+                if life != self.current_life:
+                    self.current_life = life
+            if "MobsKilled" in ob:
+                self.zombie_kill_score = ob[u'MobsKilled']
+            if "XPos" in ob and "ZPos" in ob:
+                self.current_pos = (ob[u'XPos'], ob[u'ZPos'])
+            if all(d.get('name') != 'Zombie' for d in ob["entities"]):
+                all_zombies_died = True
+        elif world_state.number_of_observations_since_last_state == 0:
+            self.unresponsive_count -= 1
+        if world_state.number_of_rewards_since_last_state > 0:
+            for rew in world_state.rewards:
+                print("Reward:" + str(rew.getValue()))
+        time.sleep(0.05)
+
+    def quit_mission(self):
+        print()
+        self.malmo_agent.sendCommand("quit")
+        print("All Zombies Died") if self.all_zombies_died else print("Agent Died")
+        print("Waiting for mission to end ", end=' ')
+        hasEnded = False
+        while not hasEnded:
+            hasEnded = True  # assume all good
+            print(".", end="")
+            time.sleep(0.1)
+            world_state = self.malmo_agent.getWorldState()
+            if world_state.is_mission_running:
+                hasEnded = False  # all not good
+
+    def print_observed_data(self):
+        print()
+        print("=========================================")
+        print("Player life: ", self.current_life)
+        print("Survival time score: ", self.survival_time_score)
+        print("Zombie kill score: ", self.zombie_kill_score)
+        print("=========================================")
+        print()
+        time.sleep(0.05)
+
+    def __safe_start_mission(self, my_mission, my_client_pool, my_mission_record, role, expId):
         used_attempts = 0
         max_attempts = 5
         print("Calling startMission for role", role)
@@ -80,7 +128,7 @@ class Agent:
                 exit(1)
         print("startMission called okay.")
 
-    def safe_wait_for_start(self):
+    def __safe_wait_for_start(self):
         print("Waiting for the mission to start", end=' ')
         start_flag = False
         start_time = time.time()
@@ -113,14 +161,14 @@ class Agent:
                 + " {HealF:10.0f}"
             )
 
-    def get_xml(self, reset, requested, ms_per_tick):
+    def get_xml(self, reset, requested):
         xml = '''<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
         <Mission xmlns="http://ProjectMalmo.microsoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
           <About>
             <Summary/>
           </About>
           <ModSettings>
-            <MsPerTick>''' + ms_per_tick + '''</MsPerTick>
+            <MsPerTick>''' + str(MS_PER_TICK) + '''</MsPerTick>
           </ModSettings>
           <ServerSection>
             <ServerInitialConditions>
