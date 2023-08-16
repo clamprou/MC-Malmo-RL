@@ -24,7 +24,11 @@ class Agent:
         self.running = True
         self.current_life = 20
         self.current_pos = (0, 0)
+        self.unresponsive_count = 10
+        self.all_zombies_died = False
 
+    def is_agent_or_zombies_alive(self):
+        return self.unresponsive_count > 0 and not self.all_zombies_died
 
     def start_mission(self, mission_no):
         print("Running mission #" + str(mission_no))
@@ -37,6 +41,9 @@ class Agent:
         self.malmo_agent.sendCommand("chat /gamerule naturalRegeneration false")
         self.malmo_agent.sendCommand("chat /gamerule doMobLoot false")
         self.malmo_agent.sendCommand("chat /difficulty 1")
+        self.unresponsive_count = 10
+        self.all_zombies_died = False
+        time.sleep(0.05)
 
     def safe_start_mission(self, my_mission, my_client_pool, my_mission_record, role, expId):
         used_attempts = 0

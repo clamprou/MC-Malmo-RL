@@ -6,14 +6,10 @@ agent = Agent()
 
 for mission_no in range(1, NUM_MISSIONS+1):
     agent.start_mission(mission_no)
-    unresponsive_count = 10
-    time.sleep(0.05)
-    all_zombies_died = False
-    # if unresponsive_count <= 0 agent has died
-    while unresponsive_count > 0 and not all_zombies_died:
+    while agent.is_agent_or_zombies_alive():
         world_state = agent.malmo_agent.getWorldState()
-        if world_state.is_mission_running and world_state.number_of_observations_since_last_state > 0:
-            unresponsive_count = 10
+        if world_state.number_of_observations_since_last_state > 0:
+            agent.unresponsive_count = 10
             ob = json.loads(world_state.observations[-1].text)
             if ob[u'TimeAlive'] != 0:
                 agent.survival_time_score = ob[u'TimeAlive']
@@ -28,15 +24,16 @@ for mission_no in range(1, NUM_MISSIONS+1):
             if all(d.get('name') != 'Zombie' for d in ob["entities"]):
                 all_zombies_died = True
         elif world_state.number_of_observations_since_last_state == 0:
-            unresponsive_count -= 1
+            agent.unresponsive_count -= 1
         if world_state.number_of_rewards_since_last_state > 0:
             for rew in world_state.rewards:
                 print("Reward:" + str(rew.getValue()))
         time.sleep(0.05)
+
     print()
 
     agent.malmo_agent.sendCommand("quit")
-    print("All Zombies Died") if all_zombies_died else print("Agent Died")
+    print("All Zombies Died") if agent.all_zombies_died else print("Agent Died")
     print("Waiting for mission to end ", end=' ')
     hasEnded = False
     while not hasEnded:
