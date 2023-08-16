@@ -11,4 +11,4 @@ for mission_no in range(1, NUM_MISSIONS+1):
         # TODO things
 
     agent.quit_mission()
-    agent.print_observed_data()
+    agent.print_finish_data()

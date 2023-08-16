@@ -6,7 +6,7 @@ import uuid
 import malmo.MalmoPython as MalmoPython
 import time
 
-MS_PER_TICK = 1
+MS_PER_TICK = 3
 NUM_MISSIONS = 10
 NUM_AGENTS = 1
 NUM_MOBS = 3
@@ -32,6 +32,9 @@ class Agent:
         self.__safe_start_mission(mission, MalmoPython.MissionRecordSpec(), 0, experimentID)
         self.__safe_wait_for_start()
         time.sleep(0.05)
+        # Make sure no Zombies are spawn
+        self.malmo_agent.sendCommand("chat /kill @e[type=!player]")
+        # Spawn the Zombies
         self.__spawn_zombies()
         self.malmo_agent.sendCommand("chat /gamerule naturalRegeneration false")
         self.malmo_agent.sendCommand("chat /gamerule doMobLoot false")
@@ -65,8 +68,6 @@ class Agent:
         if world_state.number_of_rewards_since_last_state > 0:
             for rew in world_state.rewards:
                 print("Reward:" + str(rew.getValue()))
-        if self.current_life <= 10:
-            self.malmo_agent.sendCommand("chat /kill @e[type=!player]")
         time.sleep(0.05)
 
     def quit_mission(self):
@@ -83,7 +84,7 @@ class Agent:
             if world_state.is_mission_running:
                 hasEnded = False  # all not good
 
-    def print_observed_data(self):
+    def print_finish_data(self):
         print()
         print("=========================================")
         print("Player life: ", self.current_life)
