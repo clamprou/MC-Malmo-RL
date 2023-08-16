@@ -214,7 +214,7 @@ def getXML(reset):
         <Summary/>
       </About>
       <ModSettings>
-        <MsPerTick>50</MsPerTick>
+        <MsPerTick>20</MsPerTick>
       </ModSettings>
       <ServerSection>
         <ServerInitialConditions>
@@ -244,7 +244,11 @@ def getXML(reset):
         <AgentStart>
           <Placement x="''' + str(random.randint(-17,17)) + '''" y="204" z="''' + str(random.randint(-17,17)) + '''"/>
           <Inventory>
-            <InventoryObject type="wooden_pickaxe" slot="0" quantity="1"/>
+            <InventoryBlock quantity="1" slot="0" type="diamond_sword" />
+                <InventoryBlock quantity="1" slot="39" type="iron_helmet" />
+                <InventoryBlock quantity="1" slot="38" type="iron_chestplate" />
+                <InventoryBlock quantity="1" slot="37" type="iron_leggings" />
+                <InventoryBlock quantity="1" slot="36" type="iron_boots" />
           </Inventory>
         </AgentStart>
         <AgentHandlers>
