@@ -5,8 +5,9 @@ import json
 import uuid
 import malmo.MalmoPython as MalmoPython
 import time
+import random
 
-MS_PER_TICK = 3
+MS_PER_TICK = 50
 NUM_MISSIONS = 10
 NUM_AGENTS = 1
 NUM_MOBS = 3
@@ -24,6 +25,8 @@ class Agent:
         self.current_pos = (0, 0)
         self.unresponsive_count = 10
         self.all_zombies_died = False
+        self.actions = ["attack 1", "attack 0", "move 1", "move 0", "move -1", "jump 1", "jump 0", "strafe 1",
+                        "strafe 0", "strafe -1", "turn 0.2", "turn -0.2", "turn 0"]
 
     def start_mission(self, mission_no):
         print("Running mission #" + str(mission_no))
@@ -46,7 +49,7 @@ class Agent:
         return self.unresponsive_count > 0 and not self.all_zombies_died
 
     def observe_state(self):
-        time.sleep(0.05)
+        time.sleep(0.5)
         world_state = self.malmo_agent.getWorldState()
         if world_state.number_of_observations_since_last_state > 0:
             self.unresponsive_count = 10
