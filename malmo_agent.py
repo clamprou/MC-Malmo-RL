@@ -49,29 +49,31 @@ class Agent:
         return self.unresponsive_count > 0 and not self.all_zombies_died
 
     def observe_state(self):
-        time.sleep(0.5)
-        world_state = self.malmo_agent.getWorldState()
-        if world_state.number_of_observations_since_last_state > 0:
-            self.unresponsive_count = 10
-            ob = json.loads(world_state.observations[-1].text)
-            if ob[u'TimeAlive'] != 0:
-                self.survival_time_score = ob[u'TimeAlive']
-            if "Life" in ob:
-                life = ob[u'Life']
-                if life != self.current_life:
-                    self.current_life = life
-            if "MobsKilled" in ob:
-                self.zombie_kill_score = ob[u'MobsKilled']
-            if "XPos" in ob and "ZPos" in ob:
-                self.current_pos = (ob[u'XPos'], ob[u'ZPos'])
-            if all(d.get('name') != 'Zombie' for d in ob["entities"]):
-                self.all_zombies_died = True
-        elif world_state.number_of_observations_since_last_state == 0:
-            self.unresponsive_count -= 1
-        if world_state.number_of_rewards_since_last_state > 0:
-            for rew in world_state.rewards:
-                print("Reward:" + str(rew.getValue()))
-        time.sleep(0.05)
+        while self.is_mission_running():
+            time.sleep(0.5)
+            world_state = self.malmo_agent.getWorldState()
+            if world_state.number_of_observations_since_last_state > 0:  # Agent is alive
+                self.unresponsive_count = 10
+                ob = json.loads(world_state.observations[-1].text)
+                # Normalize observed data
+                if ob[u'TimeAlive'] != 0:
+                    self.survival_time_score = ob[u'TimeAlive']
+                if "Life" in ob:
+                    life = ob[u'Life']
+                    if life != self.current_life:
+                        self.current_life = life
+                if "MobsKilled" in ob:
+                    self.zombie_kill_score = ob[u'MobsKilled']
+                if "XPos" in ob and "ZPos" in ob:
+                    self.current_pos = (ob[u'XPos'], ob[u'ZPos'])
+                if all(d.get('name') != 'Zombie' for d in ob["entities"]):
+                    self.all_zombies_died = True
+            elif world_state.number_of_observations_since_last_state == 0:
+                self.unresponsive_count -= 1
+            if world_state.number_of_rewards_since_last_state > 0:
+                for rew in world_state.rewards:
+                    print("Reward:" + str(rew.getValue()))
+            time.sleep(0.05)
 
     def quit_mission(self):
         print()

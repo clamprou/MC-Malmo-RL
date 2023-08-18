@@ -9,9 +9,7 @@ agent = Agent()
 
 for mission_no in range(1, NUM_MISSIONS+1):
     agent.start_mission(mission_no)
-    while agent.is_mission_running():
-        agent.observe_state()
-        # TODO things
+    agent.observe_state()
 
     agent.quit_mission()
     agent.print_finish_data()
