@@ -5,10 +5,10 @@ import json
 import uuid
 import malmo.MalmoPython as MalmoPython
 import time
+from datetime import datetime
 import random
 
-MS_PER_TICK = 50
-NUM_MISSIONS = 10
+MS_PER_TICK = 25
 NUM_AGENTS = 1
 NUM_MOBS = 3
 
@@ -25,7 +25,9 @@ class Agent:
         self.current_pos = (0, 0)
         self.unresponsive_count = 10
         self.all_zombies_died = False
-        self.actions = ["attack 1", "attack 0", "move 1", "move 0", "move -1", "jump 1", "jump 0", "strafe 1",
+        self.zombie_los = 0
+        self.last_reward = 0
+        self.actions = ["attack 1", "attack 0", "move 1", "move 0", "move -1", "strafe 1",
                         "strafe 0", "strafe -1", "turn 0.2", "turn -0.2", "turn 0"]
 
     def start_mission(self, mission_no):
@@ -44,36 +46,11 @@ class Agent:
         self.malmo_agent.sendCommand("chat /difficulty 1")
         self.unresponsive_count = 10
         self.all_zombies_died = False
+        time.sleep(1)
 
     def is_mission_running(self):
         return self.unresponsive_count > 0 and not self.all_zombies_died
 
-    def observe_state(self):
-        while self.is_mission_running():
-            time.sleep(0.5)
-            world_state = self.malmo_agent.getWorldState()
-            if world_state.number_of_observations_since_last_state > 0:  # Agent is alive
-                self.unresponsive_count = 10
-                ob = json.loads(world_state.observations[-1].text)
-                # Normalize observed data
-                if ob[u'TimeAlive'] != 0:
-                    self.survival_time_score = ob[u'TimeAlive']
-                if "Life" in ob:
-                    life = ob[u'Life']
-                    if life != self.current_life:
-                        self.current_life = life
-                if "MobsKilled" in ob:
-                    self.zombie_kill_score = ob[u'MobsKilled']
-                if "XPos" in ob and "ZPos" in ob:
-                    self.current_pos = (ob[u'XPos'], ob[u'ZPos'])
-                if all(d.get('name') != 'Zombie' for d in ob["entities"]):
-                    self.all_zombies_died = True
-            elif world_state.number_of_observations_since_last_state == 0:
-                self.unresponsive_count -= 1
-            if world_state.number_of_rewards_since_last_state > 0:
-                for rew in world_state.rewards:
-                    print("Reward:" + str(rew.getValue()))
-            time.sleep(0.05)
 
     def quit_mission(self):
         print()
@@ -98,6 +75,10 @@ class Agent:
         print("=========================================")
         print()
         time.sleep(0.05)
+
+    def __safe_wait_for_zombies(self):
+        while True:
+            world_state = self.malmo_agent.getWorldState()
 
     def __safe_start_mission(self, mission, mission_record, role, expId):
         used_attempts = 0
