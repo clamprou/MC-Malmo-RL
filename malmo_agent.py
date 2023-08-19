@@ -8,9 +8,10 @@ import time
 from datetime import datetime
 import random
 
-MS_PER_TICK = 50
+MS_PER_TICK = 3
+
 NUM_AGENTS = 1
-NUM_MOBS = 3
+NUM_MOBS = 1
 
 
 class Agent:
@@ -27,8 +28,8 @@ class Agent:
         self.current_pos = (0, 0)
         self.unresponsive_count = 10
         self.all_zombies_died = False
-        self.actions = ["attack 1", "attack 0", "move 1", "move 0", "move -1", "strafe 1",
-                        "strafe 0", "strafe -1", "turn 0.3", "turn -0.3", "turn 0"]
+        self.actions = ["attack 1", "move 1", "move 0", "move -1", "strafe 1",
+                        "strafe 0", "strafe -1", "turn 0.3", "turn -0.3"]
 
     def start_mission(self, mission_no):
         print("Running mission #" + str(mission_no))
@@ -50,6 +51,24 @@ class Agent:
 
     def is_mission_running(self):
         return self.unresponsive_count > 0 and not self.all_zombies_died
+
+    def play_action(self, action_number):
+        action = self.actions[action_number]
+        if action == "attack 1":
+            self.malmo_agent.sendCommand(action)
+            time.sleep(MS_PER_TICK * 0.02)
+        elif action == "turn 0.3" or action == "turn -0.3":
+            self.malmo_agent.sendCommand(action)
+            time.sleep(MS_PER_TICK * 0.01)
+            self.malmo_agent.sendCommand("turn 0")
+        elif action == "move 1" or action == "move -1":
+            self.malmo_agent.sendCommand(action)
+            time.sleep(MS_PER_TICK * 0.01)
+            self.malmo_agent.sendCommand("move 0")
+        elif action == "strafe 1" or action == "strafe -1":
+            self.malmo_agent.sendCommand(action)
+            time.sleep(MS_PER_TICK * 0.01)
+            self.malmo_agent.sendCommand("strafe 0")
 
     def quit_mission(self):
         print()
@@ -222,10 +241,3 @@ class Agent:
         xml += '</Mission>'
         return xml
 
-    def playAction(self, action_number):
-        action = self.actions[action_number]
-        if action == "attack 1":
-            self.malmo_agent.sendCommand("attack 1")
-            time.sleep(MS_PER_TICK * 0.02)
-
-        self.malmo_agent.sendCommand(action)
