@@ -7,8 +7,8 @@ NUM_MISSIONS = 1
 
 agent = Agent()
 
-brain = Dqn(1, 11, 0.9)
-brain.load()
+# brain = Dqn(1, 11, 0.9)
+# brain.load()
 time.sleep(1)
 for mission_no in range(1, NUM_MISSIONS+1):
     agent.start_mission(mission_no)
@@ -39,8 +39,8 @@ for mission_no in range(1, NUM_MISSIONS+1):
                 agent.current_pos = (ob[u'XPos'], ob[u'ZPos'])
             # action = brain.update(self.last_reward, [self.zombie_los])
             new_state = torch.Tensor([agent.zombie_los]).float().unsqueeze(0)
-            action = brain.select_action(new_state)
-            agent.malmo_agent.sendCommand(agent.actions[action])
+            # action = brain.select_action(new_state)
+            # agent.malmo_agent.sendCommand(agent.actions[action])
             agent.last_reward = 0
             agent.zombie_los = 0
         elif world_state.number_of_observations_since_last_state == 0:

@@ -2,19 +2,28 @@ from __future__ import print_function
 from __future__ import division
 from malmo_agent import *
 from ai import *
+import matplotlib.pyplot as plt
 
-NUM_MISSIONS = 100
+NUM_MISSIONS = 10
 zombies_alive = 3
+
+scores = []
+last_reward = 0
 
 agent = Agent()
 
-brain = Dqn(2, 11, 0.9)
-brain.load()
-time.sleep(1)
+# brain = Dqn(2, 11, 0.9)
+# brain.load()
+# time.sleep(1)
 for mission_no in range(1, NUM_MISSIONS+1):
     agent.start_mission(mission_no)
     while agent.is_mission_running():
         world_state = agent.malmo_agent.getWorldState()
+        if world_state.number_of_rewards_since_last_state > 0:
+            for rew in world_state.rewards:
+                last_reward += rew.getValue() * 0.083
+                print("Reward for hitting Zombie:" + str(rew.getValue()))
+                print("Last Reward:", last_reward)
         if world_state.number_of_observations_since_last_state > 0:  # Agent is alive
             agent.unresponsive_count = 10
             ob = json.loads(world_state.observations[-1].text)
@@ -22,7 +31,10 @@ for mission_no in range(1, NUM_MISSIONS+1):
                 agent.all_zombies_died = True
             # Normalize observed data
             cur_zombies_alive = list(d.get('name') == 'Zombie' for d in ob["entities"]).count(True)
-            agent.last_reward += abs(cur_zombies_alive - zombies_alive) * 0.0843
+            if abs(cur_zombies_alive - zombies_alive) * 0.0843 != 0:
+                last_reward += abs(cur_zombies_alive - zombies_alive) * 0.0843
+                print("Agent killed a Zombie and got reward:", abs(cur_zombies_alive - zombies_alive) * 0.0843)
+                print("last Reward:", last_reward)
             zombies_alive = cur_zombies_alive
             if u'LineOfSight' in ob:
                 los = ob[u'LineOfSight']
@@ -40,24 +52,30 @@ for mission_no in range(1, NUM_MISSIONS+1):
                 agent.zombie_kill_score = ob[u'MobsKilled']
             if "XPos" in ob and "ZPos" in ob:
                 agent.current_pos = (ob[u'XPos'], ob[u'ZPos'])
-            action = brain.update(agent.last_reward, [agent.zombie_los_in_range, agent.zombie_los])
-            agent.malmo_agent.sendCommand(agent.actions[action])
-            agent.total_reward += agent.last_reward
-            agent.episode_reward += agent.last_reward
-            agent.last_reward = 0
-            agent.zombie_los = 0
-            agent.zombie_los_in_range = 0
+            # action = brain.update(last_reward, [agent.zombie_los_in_range, agent.zombie_los])
+            # scores.append(brain.score())
+            # agent.playAction(action)
         elif world_state.number_of_observations_since_last_state == 0:
             agent.unresponsive_count -= 1
-        if world_state.number_of_rewards_since_last_state > 0:
-            for rew in world_state.rewards:
-                agent.last_reward = rew.getValue() * 0.083
-                print("Reward:" + str(rew.getValue()))
-        time.sleep(0.000001)
+
+        agent.total_reward += last_reward
+        agent.episode_reward += last_reward
+        last_reward = 0
+        agent.zombie_los = 0
+        agent.zombie_los_in_range = 0
+        time.sleep(MS_PER_TICK * 0.000001)
 
     agent.quit_mission()
     agent.print_finish_data()
     agent.episode_reward = 0
+    zombies_alive = 3
 
-brain.save()
+plt.plot(scores)
+plt.show()
+while True:
+    val = input("Quit? y or n: ")
+    if val == "y":
+        break
+
+# brain.save()
 time.sleep(1)

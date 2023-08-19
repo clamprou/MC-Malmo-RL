@@ -8,7 +8,7 @@ import time
 from datetime import datetime
 import random
 
-MS_PER_TICK = 20
+MS_PER_TICK = 50
 NUM_AGENTS = 1
 NUM_MOBS = 3
 
@@ -16,7 +16,6 @@ NUM_MOBS = 3
 class Agent:
     def __init__(self):
         self.episode_reward = 0
-        self.zombie_los_in_range = 0
         self.total_reward = 0
         self.survival_time_score = 0  # Lasted to the end of the mission without dying.
         self.zombie_kill_score = 0  # Good! Help rescue humanity from zombie-kind.
@@ -28,14 +27,12 @@ class Agent:
         self.current_pos = (0, 0)
         self.unresponsive_count = 10
         self.all_zombies_died = False
-        self.zombie_los = 0
-        self.last_reward = 0
         self.actions = ["attack 1", "attack 0", "move 1", "move 0", "move -1", "strafe 1",
                         "strafe 0", "strafe -1", "turn 0.3", "turn -0.3", "turn 0"]
 
     def start_mission(self, mission_no):
         print("Running mission #" + str(mission_no))
-        mission = MalmoPython.MissionSpec(self.__get_xml(), True)
+        mission = MalmoPython.MissionSpec(self.__get_xml("true" if mission_no == 1 else "false"), True)
         experimentID = str(uuid.uuid4())
         self.__safe_start_mission(mission, MalmoPython.MissionRecordSpec(), 0, experimentID)
         self.__safe_wait_for_start()
@@ -53,7 +50,6 @@ class Agent:
 
     def is_mission_running(self):
         return self.unresponsive_count > 0 and not self.all_zombies_died
-
 
     def quit_mission(self):
         print()
@@ -153,7 +149,7 @@ class Agent:
                 + " {HealF:10.0f}"
             )
 
-    def __get_xml(self):
+    def __get_xml(self, reset):
         xml = '''<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
         <Mission xmlns="http://ProjectMalmo.microsoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
           <About>
@@ -169,7 +165,7 @@ class Agent:
               </Time>
             </ServerInitialConditions>
             <ServerHandlers>
-              <FlatWorldGenerator forceReset="false" generatorString="" seed=""/>
+              <FlatWorldGenerator forceReset="''' + reset + '''" generatorString="" seed=""/>
               <DrawingDecorator>
                 <DrawCuboid x1="-19" y1="200" z1="-19" x2="19" y2="235" z2="19" type="wool" colour="ORANGE"/>
                 <DrawCuboid x1="-18" y1="202" z1="-18" x2="18" y2="247" z2="18" type="air"/>
@@ -225,3 +221,11 @@ class Agent:
 
         xml += '</Mission>'
         return xml
+
+    def playAction(self, action_number):
+        action = self.actions[action_number]
+        if action == "attack 1":
+            self.malmo_agent.sendCommand("attack 1")
+            time.sleep(MS_PER_TICK * 0.02)
+
+        self.malmo_agent.sendCommand(action)
