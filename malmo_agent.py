@@ -8,13 +8,16 @@ import time
 from datetime import datetime
 import random
 
-MS_PER_TICK = 25
+MS_PER_TICK = 20
 NUM_AGENTS = 1
 NUM_MOBS = 3
 
 
 class Agent:
     def __init__(self):
+        self.episode_reward = 0
+        self.zombie_los_in_range = 0
+        self.total_reward = 0
         self.survival_time_score = 0  # Lasted to the end of the mission without dying.
         self.zombie_kill_score = 0  # Good! Help rescue humanity from zombie-kind.
         self.malmo_agent = MalmoPython.AgentHost()
@@ -28,7 +31,7 @@ class Agent:
         self.zombie_los = 0
         self.last_reward = 0
         self.actions = ["attack 1", "attack 0", "move 1", "move 0", "move -1", "strafe 1",
-                        "strafe 0", "strafe -1", "turn 0.2", "turn -0.2", "turn 0"]
+                        "strafe 0", "strafe -1", "turn 0.3", "turn -0.3", "turn 0"]
 
     def start_mission(self, mission_no):
         print("Running mission #" + str(mission_no))
@@ -69,6 +72,8 @@ class Agent:
     def print_finish_data(self):
         print()
         print("=========================================")
+        print("Episode Reward:", self.episode_reward)
+        print("Total Reward:", self.total_reward)
         print("Player life: ", self.current_life)
         print("Survival time score: ", self.survival_time_score)
         print("Zombie kill score: ", self.zombie_kill_score)

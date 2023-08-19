@@ -27,7 +27,6 @@ for mission_no in range(1, NUM_MISSIONS+1):
                 los = ob[u'LineOfSight']
                 if los[u'hitType'] == "entity" and los[u'inRange'] and los[u'type'] == "Zombie":
                     agent.zombie_los = 1
-                    agent.last_reward += 0.5
             if ob[u'TimeAlive'] != 0:
                 agent.survival_time_score = ob[u'TimeAlive']
             if "Life" in ob:
@@ -48,7 +47,7 @@ for mission_no in range(1, NUM_MISSIONS+1):
             agent.unresponsive_count -= 1
         if world_state.number_of_rewards_since_last_state > 0:
             for rew in world_state.rewards:
-                agent.last_reward = rew.getValue() + 1
+                agent.last_reward = rew.getValue()
                 print("Reward:" + str(rew.getValue()))
         time.sleep(0.000001)
 
