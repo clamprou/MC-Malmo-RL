@@ -8,7 +8,7 @@ import time
 from datetime import datetime
 import random
 
-MS_PER_TICK = 3
+MS_PER_TICK = 10
 
 NUM_AGENTS = 1
 NUM_MOBS = 1
@@ -53,6 +53,7 @@ class Agent:
         return self.unresponsive_count > 0 and not self.all_zombies_died
 
     def play_action(self, action_number):
+        action_number = int(action_number)
         action = self.actions[action_number]
         if action == "attack 1":
             self.malmo_agent.sendCommand(action)

@@ -4,7 +4,7 @@ from malmo_agent import *
 from ai import *
 import matplotlib.pyplot as plt
 
-NUM_MISSIONS = 300
+NUM_MISSIONS = 50
 zombies_alive = NUM_MOBS
 zombie_los = 0
 zombie_los_in_range = 0
@@ -42,7 +42,6 @@ for mission_no in range(1, NUM_MISSIONS+1):
             # Normalize observed data
             cur_zombies_alive = list(d.get('name') == 'Zombie' for d in ob["entities"]).count(True)
             if cur_zombies_alive - zombies_alive != 0:
-                kills[mission_no - 1] += abs(cur_zombies_alive - zombies_alive)
                 last_reward += abs(cur_zombies_alive - zombies_alive) * 0.7
                 print("Agent killed a Zombie and got reward:", abs(cur_zombies_alive - zombies_alive) * 0.7)
                 print("last Reward:", last_reward)
@@ -82,6 +81,7 @@ for mission_no in range(1, NUM_MISSIONS+1):
     zombies_alive = NUM_MOBS
     player_life[mission_no - 1] = agent.current_life
     survival_time[mission_no - 1] = agent.survival_time_score
+    kills[mission_no - 1] = agent.zombie_kill_score
 
 plt.figure(1)
 plt.plot(scores)
