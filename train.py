@@ -4,7 +4,7 @@ from malmo_agent import *
 from ai import *
 import matplotlib.pyplot as plt
 
-NUM_MISSIONS = 50
+NUM_MISSIONS = 10
 zombies_alive = NUM_MOBS
 zombie_los = 0
 zombie_los_in_range = 0
@@ -84,16 +84,32 @@ for mission_no in range(1, NUM_MISSIONS+1):
     kills[mission_no - 1] = agent.zombie_kill_score
 
 plt.figure(1)
-plt.plot(scores)
+plt.plot(scores, label='Scores: Q-values', color='blue')
+plt.xlabel('Ticks')
+plt.ylabel('Q-values')
+plt.title('Q-value probabilities for every tick')
+plt.legend()
 
 plt.figure(2)
-plt.plot(kills)
+plt.plot(kills, label='Player kills', color='green')
+plt.xlabel('Episodes')
+plt.ylabel('Kills')
+plt.title('Sum of player kills per episode')
+plt.legend()
 
 plt.figure(3)
-plt.plot(player_life)
+plt.plot(player_life, label='Player life', color='red')
+plt.xlabel('Episodes')
+plt.ylabel('Life')
+plt.title('Life of player per episode')
+plt.legend()
 
 plt.figure(4)
-plt.plot(survival_time)
+plt.plot(survival_time, label='Time alive', color='purple')
+plt.xlabel('Episodes')
+plt.ylabel('Time alive')
+plt.title('Survival time score per episode')
+plt.legend()
 
 plt.show()
 
