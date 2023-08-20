@@ -30,20 +30,25 @@ for mission_no in range(1, NUM_MISSIONS+1):
         if world_state.number_of_rewards_since_last_state > 0:
             for rew in world_state.rewards:
                 if rew.getValue() > 1:
-                    last_reward += 0.1
+                    last_reward += 0.05
                 else:
-                    last_reward += rew.getValue() * 0.1
+                    last_reward += rew.getValue() * 0.05
                 print("Last Reward:", last_reward)
         if world_state.number_of_observations_since_last_state > 0:  # Agent is alive
             agent.unresponsive_count = 10
             ob = json.loads(world_state.observations[-1].text)
+            if "Life" in ob:
+                life = ob[u'Life']
+                if life != agent.current_life:
+                    agent.current_life = life
             if all(d.get('name') != 'Zombie' for d in ob["entities"]):
                 agent.all_zombies_died = True
+                last_reward += agent.current_life * 0.025
             # Normalize observed data
             cur_zombies_alive = list(d.get('name') == 'Zombie' for d in ob["entities"]).count(True)
             if cur_zombies_alive - zombies_alive != 0:
-                last_reward += abs(cur_zombies_alive - zombies_alive) * 0.7
-                print("Agent killed a Zombie and got reward:", abs(cur_zombies_alive - zombies_alive) * 0.7)
+                last_reward += abs(cur_zombies_alive - zombies_alive) * 0.35
+                print("Agent killed a Zombie and got reward:", abs(cur_zombies_alive - zombies_alive) * 0.35)
                 print("last Reward:", last_reward)
             zombies_alive = cur_zombies_alive
             if u'LineOfSight' in ob:
@@ -54,10 +59,6 @@ for mission_no in range(1, NUM_MISSIONS+1):
                     zombie_los = 1
             if ob[u'TimeAlive'] != 0:
                 agent.survival_time_score = ob[u'TimeAlive']
-            if "Life" in ob:
-                life = ob[u'Life']
-                if life != agent.current_life:
-                    agent.current_life = life
             if "MobsKilled" in ob:
                 agent.zombie_kill_score = ob[u'MobsKilled']
             if "XPos" in ob and "ZPos" in ob:
