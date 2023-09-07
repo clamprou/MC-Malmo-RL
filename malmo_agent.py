@@ -75,10 +75,12 @@ class Agent:
             self.malmo_agent.sendCommand("strafe 0")
 
     def observe_env(self):
+        observed = False  # keep track if agent observe something from the environment
         world_state = self.malmo_agent.getWorldState()
 
         # Agent gets rewards automatically by the platform defined in mission xml
         if world_state.number_of_rewards_since_last_state > 0:
+            observed = True
             for rew in world_state.rewards:
                 if rew.getValue() > 1:
                     self.tick_reward += 0.1
@@ -88,6 +90,7 @@ class Agent:
 
         # If Agent is steel alive we observe the changes on the environment and calculate our own rewards
         if world_state.number_of_observations_since_last_state > 0:
+            observed = True
             self.unresponsive_count = 10
             ob = json.loads(world_state.observations[-1].text)
 
@@ -120,6 +123,7 @@ class Agent:
                 self.current_pos = (ob[u'XPos'], ob[u'ZPos'])
         elif world_state.number_of_observations_since_last_state == 0:
             self.unresponsive_count -= 1
+        return observed
 
     def update_per_tick(self):
         self.total_reward += self.tick_reward  # Update total reward, never restore to 0

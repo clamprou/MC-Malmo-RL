@@ -4,9 +4,6 @@ from malmo_agent import *
 import matplotlib.pyplot as plt
 
 NUM_EPISODES = 5
-zombies_alive = NUM_MOBS
-zombie_los = 0
-zombie_los_in_range = 0
 
 scores = []
 kills = []
@@ -23,11 +20,12 @@ for episode in range(1, NUM_EPISODES + 1):
     survival_time.append(0)
     agent.start_episode(episode)
     while agent.is_episode_running():
-        agent.observe_env()
+        # Do AI things
+        if agent.observe_env():
 
-    #    Do AI things
 
         agent.update_per_tick()
+
 
     agent.quit_episode()
 
@@ -35,9 +33,6 @@ for episode in range(1, NUM_EPISODES + 1):
     kills[episode - 1] = agent.zombie_kill_score
     player_life[episode - 1] = agent.current_life
     survival_time[episode - 1] = agent.survival_time_score
-
-
-
 
 
 
