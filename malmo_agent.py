@@ -8,7 +8,7 @@ import time
 from datetime import datetime
 import random
 
-MS_PER_TICK = 50
+MS_PER_TICK = 5
 
 NUM_AGENTS = 1
 NUM_MOBS = 1
@@ -34,9 +34,9 @@ class Agent:
         self.all_zombies_died = False
         self.actions = ["attack 1", "move 1", "move -1", "strafe 1", "strafe -1", "turn 0.3", "turn -0.3"]
 
-    def start_episode(self, mission_no):
-        print("Running mission #" + str(mission_no))
-        mission = MalmoPython.MissionSpec(self.__get_xml("true" if mission_no == 1 else "false"), True)
+    def start_episode(self, episode):
+        print("Running mission #" + str(episode))
+        mission = MalmoPython.MissionSpec(self.__get_xml("true" if episode == 0 else "false"), True)
         experimentID = str(uuid.uuid4())
         self.__safe_start_mission(mission, MalmoPython.MissionRecordSpec(), 0, experimentID)
         self.__safe_wait_for_start()

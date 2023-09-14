@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import division
 import gymnasium as gym
 import math
 import random
@@ -8,12 +6,10 @@ import matplotlib.pyplot as plt
 from collections import namedtuple, deque
 from itertools import count
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-from malmo_agent import *
 
 
 # set up matplotlib
@@ -60,7 +56,7 @@ class DQN(nn.Module):
         x = F.relu(self.layer2(x))
         return self.layer3(x)
 
-#BATCH_SIZE is the number of transitions sampled from the replay buffer
+# BATCH_SIZE is the number of transitions sampled from the replay buffer
 # GAMMA is the discount factor as mentioned in the previous section
 # EPS_START is the starting value of epsilon
 # EPS_END is the final value of epsilon
@@ -75,10 +71,8 @@ EPS_DECAY = 1000
 TAU = 0.005
 LR = 1e-4
 
-agent = Agent()
-
 # Get number of actions from gym action space
-n_actions = len(7)
+n_actions = 7
 # Get the number of state observations
 n_observations = 2
 
@@ -184,143 +178,48 @@ def optimize_model():
     optimizer.step()
 
 # if torch.cuda.is_available():
-#     NUM_MISSIONS = 600
+#     num_episodes = 600
 # else:
-#     NUM_MISSIONS = 50
-
-NUM_MISSIONS = 10
-
-zombies_alive = NUM_MOBS
-zombie_los = 0
-zombie_los_in_range = 0
-ticks = 0
-
-scores = []
-kills = []
-player_life = []
-survival_time = []
-last_reward = 0
-
-time.sleep(1)
-for mission_no in range(1, NUM_MISSIONS+1):
-    kills.append(0)
-    player_life.append(0)
-    survival_time.append(0)
-    agent.start_episode(mission_no)
-    state = [zombie_los_in_range, zombie_los]
-    state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
-    while agent.is_episode_running():
-        action = select_action(state)
-        agent.play_action(action.item())
-        time.sleep(MS_PER_TICK * 0.000001)
-        world_state = agent.malmo_agent.getWorldState()
-        if world_state.number_of_rewards_since_last_state > 0:
-            for rew in world_state.rewards:
-                if rew.getValue() > 1:
-                    last_reward += 0.1
-                else:
-                    last_reward += rew.getValue() * 0.1
-                print("Last Reward:", last_reward)
-        if world_state.number_of_observations_since_last_state > 0:  # Agent is alive
-            agent.unresponsive_count = 10
-            ob = json.loads(world_state.observations[-1].text)
-            if all(d.get('name') != 'Zombie' for d in ob["entities"]):
-                agent.all_zombies_died = True
-            # Normalize observed data
-            cur_zombies_alive = list(d.get('name') == 'Zombie' for d in ob["entities"]).count(True)
-            if cur_zombies_alive - zombies_alive != 0:
-                last_reward += abs(cur_zombies_alive - zombies_alive) * 0.7
-                print("Agent killed a Zombie and got reward:", abs(cur_zombies_alive - zombies_alive) * 0.7)
-                print("last Reward:", last_reward)
-            zombies_alive = cur_zombies_alive
-            if u'LineOfSight' in ob:
-                los = ob[u'LineOfSight']
-                if los[u'hitType'] == "entity" and los[u'inRange'] and los[u'type'] == "Zombie":
-                    zombie_los_in_range = 1
-                elif los[u'hitType'] == "entity" and los[u'type'] == "Zombie":
-                    zombie_los = 1
-            if ob[u'TimeAlive'] != 0:
-                agent.survival_time_score = ob[u'TimeAlive']
-            if "Life" in ob:
-                life = ob[u'Life']
-                if life != agent.current_life:
-                    agent.current_life = life
-            if "MobsKilled" in ob:
-                agent.zombie_kill_score = ob[u'MobsKilled']
-            if "XPos" in ob and "ZPos" in ob:
-                agent.current_pos = (ob[u'XPos'], ob[u'ZPos'])
-        elif world_state.number_of_observations_since_last_state == 0:
-            agent.unresponsive_count -= 1
-
-        observation = [zombie_los_in_range, zombie_los]
-        reward = torch.tensor([last_reward], device=device)
-        done = not(agent.is_episode_running())
-
-        if done:
-            next_state = None
-        else:
-            next_state = torch.tensor(observation, dtype=torch.float32, device=device).unsqueeze(0)
-
-        memory.push(state, action, next_state, reward)
-        state = next_state
-
-        optimize_model()
-        target_net_state_dict = target_net.state_dict()
-        policy_net_state_dict = policy_net.state_dict()
-        for key in policy_net_state_dict:
-            target_net_state_dict[key] = policy_net_state_dict[key]*TAU + target_net_state_dict[key]*(1-TAU)
-        target_net.load_state_dict(target_net_state_dict)
-        if done:
-            episode_durations.append(ticks + 1)
-            plot_durations()
-
-        agent.total_reward += last_reward
-        agent.episode_reward += last_reward
-        last_reward = 0
-        zombie_los = 0
-        zombie_los_in_range = 0
-        # time.sleep(MS_PER_TICK * 0.000001)
-        ticks += 1
-
-    agent.quit_episode()
-    agent.print_finish_data()
-    agent.episode_reward = 0
-    zombies_alive = NUM_MOBS
-    player_life[mission_no - 1] = agent.current_life
-    survival_time[mission_no - 1] = agent.survival_time_score
-    kills[mission_no - 1] = agent.zombie_kill_score
-
-print('Complete')
-plot_durations(show_result=True)
-plt.ioff()
-plt.show()
-
-# plt.figure(ticks + 1)
-# plt.plot(scores, label='Scores: Q-values', color='blue')
-# plt.xlabel('Ticks')
-# plt.ylabel('Q-values')
-# plt.title('Q-value probabilities for every tick')
-# plt.legend()
-
-plt.figure(ticks + 2)
-plt.plot(kills, label='Player kills', color='green')
-plt.xlabel('Episodes')
-plt.ylabel('Kills')
-plt.title('Sum of player kills per episode')
-plt.legend()
-
-plt.figure(ticks + 3)
-plt.plot(player_life, label='Player life', color='red')
-plt.xlabel('Episodes')
-plt.ylabel('Life')
-plt.title('Life of player per episode')
-plt.legend()
-
-plt.figure(ticks + 4)
-plt.plot(survival_time, label='Time alive', color='purple')
-plt.xlabel('Episodes')
-plt.ylabel('Time alive')
-plt.title('Survival time score per episode')
-plt.legend()
-
-plt.show()
+#     num_episodes = 50
+#
+# for i_episode in range(num_episodes):
+#     # Initialize the environment and get it's state
+#     state, info = env.reset()
+#     state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
+#     for t in count():
+#         action = select_action(state)
+#         observation, reward, terminated, truncated, _ = env.step(action.item())
+#         reward = torch.tensor([reward], device=device)
+#         done = terminated or truncated
+#
+#         if terminated:
+#             next_state = None
+#         else:
+#             next_state = torch.tensor(observation, dtype=torch.float32, device=device).unsqueeze(0)
+#
+#         # Store the transition in memory
+#         memory.push(state, action, next_state, reward)
+#
+#         # Move to the next state
+#         state = next_state
+#
+#         # Perform one step of the optimization (on the policy network)
+#         optimize_model()
+#
+#         # Soft update of the target network's weights
+#         # θ′ ← τ θ + (1 −τ )θ′
+#         target_net_state_dict = target_net.state_dict()
+#         policy_net_state_dict = policy_net.state_dict()
+#         for key in policy_net_state_dict:
+#             target_net_state_dict[key] = policy_net_state_dict[key]*TAU + target_net_state_dict[key]*(1-TAU)
+#         target_net.load_state_dict(target_net_state_dict)
+#
+#         if done:
+#             episode_durations.append(t + 1)
+#             plot_durations()
+#             break
+#
+# print('Complete')
+# plot_durations(show_result=True)
+# plt.ioff()
+# plt.show()
