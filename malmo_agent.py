@@ -7,8 +7,13 @@ import malmo.MalmoPython as MalmoPython
 import time
 from datetime import datetime
 import random
+from IPython import display
 
-MS_PER_TICK = 10
+import matplotlib
+import torch
+from matplotlib import pyplot as plt
+
+MS_PER_TICK = 5
 
 NUM_AGENTS = 1
 NUM_MOBS = 1
@@ -28,8 +33,7 @@ class Agent:
         self.current_pos = (0, 0)
         self.unresponsive_count = 10
         self.all_zombies_died = False
-        self.actions = ["attack 1", "move 1", "move 0", "move -1", "strafe 1",
-                        "strafe 0", "strafe -1", "turn 0.3", "turn -0.3"]
+        self.actions = ["attack 1", "move 1", "move -1", "strafe 1", "strafe -1", "turn 0.3", "turn -0.3"]
 
     def start_mission(self, mission_no):
         print("Running mission #" + str(mission_no))
@@ -58,6 +62,7 @@ class Agent:
         if action == "attack 1":
             self.malmo_agent.sendCommand(action)
             time.sleep(MS_PER_TICK * 0.02)
+            self.malmo_agent.sendCommand("attack 0")
         elif action == "turn 0.3" or action == "turn -0.3":
             self.malmo_agent.sendCommand(action)
             time.sleep(MS_PER_TICK * 0.01)
@@ -242,3 +247,34 @@ class Agent:
         xml += '</Mission>'
         return xml
 
+is_ipython = 'inline' in matplotlib.get_backend()
+if is_ipython:
+    from IPython import display
+
+plt.ion()
+
+def plot_table(table ,show_result=False):
+    is_ipython = 'inline' in matplotlib.get_backend()
+    plt.figure(1)
+    durations_t = torch.tensor(table, dtype=torch.float)
+    if show_result:
+        plt.title('Result')
+    else:
+        plt.clf()
+        plt.title('Training...')
+    plt.xlabel('Episode')
+    plt.ylabel('Duration')
+    plt.plot(durations_t.numpy())
+    # Take 100 episode averages and plot them too
+    if len(durations_t) >= 100:
+        means = durations_t.unfold(0, 100, 1).mean(1).view(-1)
+        means = torch.cat((torch.zeros(99), means))
+        plt.plot(means.numpy())
+
+    plt.pause(0.001)  # pause a bit so that plots are updated
+    if is_ipython:
+        if not show_result:
+            display.display(plt.gcf())
+            display.clear_output(wait=True)
+        else:
+            display.display(plt.gcf())
