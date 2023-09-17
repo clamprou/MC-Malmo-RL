@@ -12,11 +12,12 @@ import matplotlib
 import torch
 from matplotlib import pyplot as plt
 
-MS_PER_TICK = 50
+MS_PER_TICK = 7
 
 NUM_AGENTS = 1
 NUM_MOBS = 1
-UNRESPONSIVE = 1000/2*MS_PER_TICK
+UNRESPONSIVE_AGENT = (1000 / 2 * MS_PER_TICK) + 500000
+UNRESPONSIVE_ZOMBIES = (1000 / 2 * MS_PER_TICK) + 10000000
 
 
 
@@ -36,7 +37,7 @@ class Agent:
         self.running = True
         self.current_life = 20
         self.current_pos = (0, 0)
-        self.unresponsive_count = UNRESPONSIVE
+        self.unresponsive_count = UNRESPONSIVE_AGENT
         self.all_zombies_died = False
         self.actions = ["attack 1", "move 1", "move -1", "strafe 1", "strafe -1", "turn 0.3", "turn -0.3"]
 
@@ -54,7 +55,7 @@ class Agent:
         self.malmo_agent.sendCommand("chat /gamerule naturalRegeneration false")
         self.malmo_agent.sendCommand("chat /gamerule doMobLoot false")
         self.malmo_agent.sendCommand("chat /difficulty 1")
-        self.unresponsive_count = UNRESPONSIVE
+        self.unresponsive_count = UNRESPONSIVE_AGENT
         self.all_zombies_died = False
         self.__safe_wait_for_zombies()
 
@@ -89,34 +90,35 @@ class Agent:
             observed = True
             for rew in world_state.rewards:
                 if rew.getValue() > 1:
-                    self.tick_reward += 0.1
+                    self.tick_reward += 0.05
                 else:
-                    self.tick_reward += rew.getValue() * 0.1
+                    self.tick_reward += rew.getValue() * 0.05
                 print("Last Reward:", self.tick_reward)
 
         # If Agent is steel alive we observe the changes on the environment and calculate our own rewards
         if world_state.number_of_observations_since_last_state > 0:
             observed = True
-            self.unresponsive_count = UNRESPONSIVE
+            self.unresponsive_count = UNRESPONSIVE_AGENT
             ob = json.loads(world_state.observations[-1].text)
 
             if all(d.get('name') != 'Zombie' for d in ob["entities"]):
                 self.all_zombies_died = True
+                self.tick_reward += self.current_life * 0.025
 
             # Observe and normalize rewards
 
             cur_zombies_alive = list(d.get('name') == 'Zombie' for d in ob["entities"]).count(True)
             if cur_zombies_alive - self.zombies_alive != 0:
-                self.tick_reward += abs(cur_zombies_alive - self.zombies_alive) * 0.7
-                print("Agent killed a Zombie and got reward:", abs(cur_zombies_alive - self.zombies_alive) * 0.7)
+                self.tick_reward += abs(cur_zombies_alive - self.zombies_alive) * 0.35
+                print("Agent killed a Zombie and got reward:", abs(cur_zombies_alive - self.zombies_alive) * 0.35)
                 print("last Reward:", self.tick_reward)
             self.zombies_alive = cur_zombies_alive
             if u'LineOfSight' in ob:
                 los = ob[u'LineOfSight']
                 if los[u'hitType'] == "entity" and los[u'inRange'] and los[u'type'] == "Zombie":
-                    zombie_los_in_range = 1
+                    self.zombie_los_in_range = 1
                 elif los[u'hitType'] == "entity" and los[u'type'] == "Zombie":
-                    zombie_los = 1
+                    self.zombie_los = 1
             if ob[u'TimeAlive'] != 0:
                 self.survival_time_score = ob[u'TimeAlive']
             if "Life" in ob:
@@ -171,12 +173,17 @@ class Agent:
 
     def __safe_wait_for_zombies(self):
         zombies_spawned = False
+        unresponsive_count = UNRESPONSIVE_ZOMBIES
         while True:
             world_state = self.malmo_agent.getWorldState()
             if len(world_state.observations) != 0:
                 ob = json.loads(world_state.observations[-1].text)
                 if any(d.get('name') == 'Zombie' for d in ob["entities"]):
                     break
+            if unresponsive_count <= 0:
+                self.__spawn_zombies()
+                unresponsive_count = UNRESPONSIVE_ZOMBIES
+            unresponsive_count -= 1
 
     def __safe_start_mission(self, mission, mission_record, role, expId):
         used_attempts = 0

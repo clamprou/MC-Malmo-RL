@@ -25,7 +25,7 @@ for episode in range(NUM_EPISODES):
             action = brain.update(agent.tick_reward, [agent.zombie_los_in_range, agent.zombie_los])
             scores.append(brain.score())
             agent.play_action(action)
-
+            print("reward:"+str(agent.tick_reward)+" state:["+str(agent.zombie_los_in_range)+","+str(agent.zombie_los)+"] action:"+agent.actions[action])
             agent.update_per_tick()
             t += 1
 
@@ -48,6 +48,8 @@ for episode in range(NUM_EPISODES):
 print('Complete')
 plot_table(scores, "Q-values", show_result=True)
 plot_table(kills, "kills", show_result=True)
+plot_table(player_life, "life", show_result=True)
+plot_table(survival_time, "survival", show_result=True)
 plt.ioff()
 plt.show()
 
