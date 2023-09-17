@@ -4,7 +4,7 @@ from malmo_agent import *
 from ai import *
 import matplotlib.pyplot as plt
 
-NUM_EPISODES = 5
+NUM_EPISODES = 100
 
 rewards = []
 scores = []
@@ -17,7 +17,6 @@ agent = Agent()
 
 brain = Dqn(2, 7, 0.9)
 brain.load()
-time.sleep(1)
 for episode in range(NUM_EPISODES):
     agent.start_episode(episode)
     t = 0
@@ -43,8 +42,6 @@ for episode in range(NUM_EPISODES):
 
 
     agent.quit_episode()
-
-    # Keep Agent scores
 
 
 

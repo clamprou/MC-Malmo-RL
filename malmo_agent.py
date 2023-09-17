@@ -16,6 +16,8 @@ MS_PER_TICK = 50
 
 NUM_AGENTS = 1
 NUM_MOBS = 1
+UNRESPONSIVE = 1000/2*MS_PER_TICK
+
 
 
 class Agent:
@@ -34,7 +36,7 @@ class Agent:
         self.running = True
         self.current_life = 20
         self.current_pos = (0, 0)
-        self.unresponsive_count = 10
+        self.unresponsive_count = UNRESPONSIVE
         self.all_zombies_died = False
         self.actions = ["attack 1", "move 1", "move -1", "strafe 1", "strafe -1", "turn 0.3", "turn -0.3"]
 
@@ -52,9 +54,9 @@ class Agent:
         self.malmo_agent.sendCommand("chat /gamerule naturalRegeneration false")
         self.malmo_agent.sendCommand("chat /gamerule doMobLoot false")
         self.malmo_agent.sendCommand("chat /difficulty 1")
-        self.unresponsive_count = 10
+        self.unresponsive_count = UNRESPONSIVE
         self.all_zombies_died = False
-        time.sleep(MS_PER_TICK * 0.000001)
+        self.__safe_wait_for_zombies()
 
     def is_episode_running(self):
         return self.unresponsive_count > 0 and not self.all_zombies_died
@@ -95,7 +97,7 @@ class Agent:
         # If Agent is steel alive we observe the changes on the environment and calculate our own rewards
         if world_state.number_of_observations_since_last_state > 0:
             observed = True
-            self.unresponsive_count = 10
+            self.unresponsive_count = UNRESPONSIVE
             ob = json.loads(world_state.observations[-1].text)
 
             if all(d.get('name') != 'Zombie' for d in ob["entities"]):
@@ -168,8 +170,13 @@ class Agent:
         time.sleep(MS_PER_TICK * 0.000001)
 
     def __safe_wait_for_zombies(self):
+        zombies_spawned = False
         while True:
             world_state = self.malmo_agent.getWorldState()
+            if len(world_state.observations) != 0:
+                ob = json.loads(world_state.observations[-1].text)
+                if any(d.get('name') == 'Zombie' for d in ob["entities"]):
+                    break
 
     def __safe_start_mission(self, mission, mission_record, role, expId):
         used_attempts = 0
@@ -228,6 +235,7 @@ class Agent:
             exit(1)
         print()
         print("Mission has started.")
+
 
     def __spawn_zombies(self):
         for _ in range(NUM_MOBS):
