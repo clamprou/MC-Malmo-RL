@@ -12,7 +12,7 @@ import matplotlib
 import torch
 from matplotlib import pyplot as plt
 
-MS_PER_TICK = 7
+MS_PER_TICK = 5
 
 NUM_AGENTS = 1
 NUM_MOBS = 1
@@ -23,6 +23,7 @@ UNRESPONSIVE_ZOMBIES = (1000 / 2 * MS_PER_TICK) + 10000000
 
 class Agent:
     def __init__(self):
+        self.zombies_pos = [0, 0]
         self.episode_reward = 0  # Rewards per tick
         self.tick_reward = 0  # Rewards per episode
         self.total_reward = 0  # Total rewards, never restore to 0
@@ -36,7 +37,7 @@ class Agent:
         self.client_pool.add(MalmoPython.ClientInfo('127.0.0.1', 10000))
         self.running = True
         self.current_life = 20
-        self.current_pos = (0, 0)
+        self.current_pos = [0, 0]
         self.unresponsive_count = UNRESPONSIVE_AGENT
         self.all_zombies_died = False
         self.actions = ["attack 1", "move 1", "move -1", "strafe 1", "strafe -1", "turn 0.3", "turn -0.3"]
@@ -50,6 +51,7 @@ class Agent:
         time.sleep(MS_PER_TICK * 0.000001)
         # Make sure no Zombies are spawn
         self.malmo_agent.sendCommand("chat /kill @e[type=!player]")
+        time.sleep(MS_PER_TICK * 0.000001)
         # Spawn the Zombies
         self.__spawn_zombies()
         self.malmo_agent.sendCommand("chat /gamerule naturalRegeneration false")
@@ -104,6 +106,10 @@ class Agent:
             if all(d.get('name') != 'Zombie' for d in ob["entities"]):
                 self.all_zombies_died = True
                 self.tick_reward += self.current_life * 0.025
+            else:
+                for d in ob["entities"]:
+                    if d.get('name') == 'Zombie':
+                        self.zombies_pos = [round(d.get('x')), round(d.get('z'))]
 
             # Observe and normalize rewards
 
@@ -123,12 +129,12 @@ class Agent:
                 self.survival_time_score = ob[u'TimeAlive']
             if "Life" in ob:
                 life = ob[u'Life']
-                if life != self.current_life:
-                    self.current_life = life
+                if round(life) != round(self.current_life):
+                    self.current_life = round(life)
             if "MobsKilled" in ob:
                 self.zombie_kill_score = ob[u'MobsKilled']
             if "XPos" in ob and "ZPos" in ob:
-                self.current_pos = (ob[u'XPos'], ob[u'ZPos'])
+                self.current_pos = [round(ob[u'XPos']), round(ob[u'ZPos'])]
         elif world_state.number_of_observations_since_last_state == 0:
             self.unresponsive_count -= 1
         return observed

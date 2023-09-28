@@ -1,5 +1,3 @@
-# AI for Self Driving Car
-
 # Importing the libraries
 
 import numpy as np
@@ -20,12 +18,14 @@ class Network(nn.Module):
         super(Network, self).__init__()
         self.input_size = input_size
         self.nb_action = nb_action
-        self.fc1 = nn.Linear(input_size, 30)
-        self.fc2 = nn.Linear(30, nb_action)
-    
+        self.fc1 = nn.Linear(input_size, 100)
+        self.fc2 = nn.Linear(input_size, 100)
+        self.fc3 = nn.Linear(100, nb_action)
+
     def forward(self, state):
         x = F.relu(self.fc1(state))
-        q_values = self.fc2(x)
+        x1 = self.fc2(state)
+        q_values = self.fc3(x1)
         return q_values
 
 # Implementing Experience Replay
@@ -84,7 +84,7 @@ class Dqn():
         self.last_state = new_state
         self.last_reward = reward
         self.reward_window.append(reward)
-        if len(self.reward_window) > 1000:
+        if len(self.reward_window) > 10000:
             del self.reward_window[0]
         return action
     
