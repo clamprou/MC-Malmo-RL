@@ -4,35 +4,34 @@ from malmo_agent import *
 import matplotlib.pyplot as plt
 from ai_cart_pole1 import *
 
-NUM_EPISODES = 300
+NUM_EPISODES = 2000
 
+rewards = []
 scores = []
 kills = []
+prev_kills = 0
 player_life = []
 survival_time = []
-last_reward = 0
 
 agent = Agent()
 
-time.sleep(1)
 for episode in range(NUM_EPISODES):
-    kills.append(0)
-    player_life.append(0)
-    survival_time.append(0)
     agent.start_episode(episode)
-    state = [agent.zombie_los, agent.zombie_los_in_range]
+    state = [agent.zombie_los_in_range, agent.zombie_los, agent.current_pos[0], agent.current_pos[1], agent.current_life]
     state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
     t = 0
     while agent.is_episode_running():
         if agent.observe_env():
             action = select_action(state)
             agent.play_action(action.item())
-            time.sleep(MS_PER_TICK * 0.000001)
             agent.observe_env()
-            observation = [agent.zombie_los, agent.zombie_los_in_range]
-            reward = agent.tick_reward
-            reward = torch.tensor([reward], device=device)
+            observation = [agent.zombie_los_in_range, agent.zombie_los, agent.current_pos[0], agent.current_pos[1], agent.current_life]
+            reward = torch.tensor([agent.tick_reward], device=device)
             done = not agent.is_episode_running()
+            print("reward:"+str(agent.tick_reward)+"[zombie_los:"+str(agent.zombie_los_in_range)+" zombie_los_range:" +
+                  str(agent.zombie_los)+" agent_pos:("+str(agent.current_pos[0])+","+str(agent.current_pos[1])
+                  + ") zombie_pos:("+str(agent.zombies_pos[0])+"," + str(agent.zombies_pos[1]) + ")" + " life:" +
+                  str(agent.current_life) + " action:"+ agent.actions[action])
             if done:
                 next_state = None
             else:
@@ -49,54 +48,30 @@ for episode in range(NUM_EPISODES):
             agent.update_per_tick()
             t += 1
 
-    episode_durations.append(agent.episode_reward)
-    plot_durations()
+    survival_time.append(agent.survival_time_score)
+    player_life.append(agent.current_life)
+    if agent.zombie_kill_score != prev_kills:
+        kills.append(agent.zombie_kill_score - prev_kills)
+        prev_kills = agent.zombie_kill_score
+    else:
+        kills.append(0)
+
+    rewards.append(agent.episode_reward)
+    plot_table(rewards, "Rewards")
 
 
 
     agent.quit_episode()
 
-    # Keep Agent scores
-    kills[episode - 1] = agent.zombie_kill_score
-    player_life[episode - 1] = agent.current_life
-    survival_time[episode - 1] = agent.survival_time_score
-
 
 
 print('Complete')
-plot_durations(show_result=True)
+# plot_table(scores, "Q-values", show_result=True)
+plot_table(rewards, "rewards", show_result=True)
+plot_table(kills, "kills", show_result=True)
+plot_table(player_life, "life", show_result=True)
+plot_table(survival_time, "survival", show_result=True)
 plt.ioff()
 plt.show()
-
-
-# plt.figure(1)
-# plt.plot(scores, label='Scores: Q-values', color='blue')
-# plt.xlabel('Ticks')
-# plt.ylabel('Q-values')
-# plt.title('Q-value probabilities for every tick')
-# plt.legend()
-#
-# plt.figure(2)
-# plt.plot(kills, label='Player kills', color='green')
-# plt.xlabel('Episodes')
-# plt.ylabel('Kills')
-# plt.title('Sum of player kills per episode')
-# plt.legend()
-#
-# plt.figure(3)
-# plt.plot(player_life, label='Player life', color='red')
-# plt.xlabel('Episodes')
-# plt.ylabel('Life')
-# plt.title('Life of player per episode')
-# plt.legend()
-#
-# plt.figure(4)
-# plt.plot(survival_time, label='Time alive', color='purple')
-# plt.xlabel('Episodes')
-# plt.ylabel('Time alive')
-# plt.title('Survival time score per episode')
-# plt.legend()
-#
-# plt.show()
 
 time.sleep(1)

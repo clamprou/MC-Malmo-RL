@@ -78,7 +78,7 @@ LR = 1e-4
 agent = Agent()
 
 # Get number of actions from gym action space
-n_actions = len(7)
+n_actions = 7
 # Get the number of state observations
 n_observations = 2
 

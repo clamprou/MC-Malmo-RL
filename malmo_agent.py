@@ -8,14 +8,22 @@ import time
 from datetime import datetime
 import random
 
+import matplotlib
+import torch
+from matplotlib import pyplot as plt
+
 MS_PER_TICK = 5
 
 NUM_AGENTS = 1
 NUM_MOBS = 1
+UNRESPONSIVE_AGENT = (50 / MS_PER_TICK)
+UNRESPONSIVE_ZOMBIES = (1000 / 2 * MS_PER_TICK) + 10000000
+
 
 
 class Agent:
     def __init__(self):
+        self.zombies_pos = [0, 0]
         self.episode_reward = 0  # Rewards per tick
         self.tick_reward = 0  # Rewards per episode
         self.total_reward = 0  # Total rewards, never restore to 0
@@ -29,8 +37,8 @@ class Agent:
         self.client_pool.add(MalmoPython.ClientInfo('127.0.0.1', 10000))
         self.running = True
         self.current_life = 20
-        self.current_pos = (0, 0)
-        self.unresponsive_count = 10
+        self.current_pos = [0, 0]
+        self.unresponsive_count = UNRESPONSIVE_AGENT
         self.all_zombies_died = False
         self.actions = ["attack 1", "move 1", "move -1", "strafe 1", "strafe -1", "turn 0.3", "turn -0.3"]
 
@@ -40,17 +48,18 @@ class Agent:
         experimentID = str(uuid.uuid4())
         self.__safe_start_mission(mission, MalmoPython.MissionRecordSpec(), 0, experimentID)
         self.__safe_wait_for_start()
-        time.sleep(0.05)
+        time.sleep(MS_PER_TICK * 0.000001)
         # Make sure no Zombies are spawn
         self.malmo_agent.sendCommand("chat /kill @e[type=!player]")
+        time.sleep(MS_PER_TICK * 0.000001)
         # Spawn the Zombies
         self.__spawn_zombies()
         self.malmo_agent.sendCommand("chat /gamerule naturalRegeneration false")
         self.malmo_agent.sendCommand("chat /gamerule doMobLoot false")
         self.malmo_agent.sendCommand("chat /difficulty 1")
-        self.unresponsive_count = 10
+        self.unresponsive_count = UNRESPONSIVE_AGENT
         self.all_zombies_died = False
-        time.sleep(1)
+        self.__safe_wait_for_zombies()
 
     def is_episode_running(self):
         return self.unresponsive_count > 0 and not self.all_zombies_died
@@ -75,6 +84,7 @@ class Agent:
             self.malmo_agent.sendCommand("strafe 0")
 
     def observe_env(self):
+        time.sleep(MS_PER_TICK * 0.000001)
         observed = False  # keep track if agent observe something from the environment
         world_state = self.malmo_agent.getWorldState()
 
@@ -83,44 +93,47 @@ class Agent:
             observed = True
             for rew in world_state.rewards:
                 if rew.getValue() > 1:
-                    self.tick_reward += 0.1
+                    self.tick_reward += 0.05
                 else:
-                    self.tick_reward += rew.getValue() * 0.1
-                print("Last Reward:", self.tick_reward)
+                    self.tick_reward += rew.getValue() * 0.05
 
         # If Agent is steel alive we observe the changes on the environment and calculate our own rewards
         if world_state.number_of_observations_since_last_state > 0:
             observed = True
-            self.unresponsive_count = 10
+            self.unresponsive_count = UNRESPONSIVE_AGENT
             ob = json.loads(world_state.observations[-1].text)
 
             if all(d.get('name') != 'Zombie' for d in ob["entities"]):
                 self.all_zombies_died = True
+                self.tick_reward += self.current_life * 0.025
+            else:
+                for d in ob["entities"]:
+                    if d.get('name') == 'Zombie':
+                        self.zombies_pos = [round(d.get('x')), round(d.get('z'))]
 
             # Observe and normalize rewards
 
             cur_zombies_alive = list(d.get('name') == 'Zombie' for d in ob["entities"]).count(True)
             if cur_zombies_alive - self.zombies_alive != 0:
-                self.tick_reward += abs(cur_zombies_alive - self.zombies_alive) * 0.7
-                print("Agent killed a Zombie and got reward:", abs(cur_zombies_alive - self.zombies_alive) * 0.7)
-                print("last Reward:", self.tick_reward)
+                self.tick_reward += abs(cur_zombies_alive - self.zombies_alive) * 0.35
+                print("Agent killed a Zombie and got reward:", abs(cur_zombies_alive - self.zombies_alive) * 0.35)
             self.zombies_alive = cur_zombies_alive
             if u'LineOfSight' in ob:
                 los = ob[u'LineOfSight']
                 if los[u'hitType'] == "entity" and los[u'inRange'] and los[u'type'] == "Zombie":
-                    zombie_los_in_range = 1
+                    self.zombie_los_in_range = 1
                 elif los[u'hitType'] == "entity" and los[u'type'] == "Zombie":
-                    zombie_los = 1
+                    self.zombie_los = 1
             if ob[u'TimeAlive'] != 0:
                 self.survival_time_score = ob[u'TimeAlive']
             if "Life" in ob:
                 life = ob[u'Life']
-                if life != self.current_life:
-                    self.current_life = life
+                if round(life) != round(self.current_life):
+                    self.current_life = round(life)
             if "MobsKilled" in ob:
                 self.zombie_kill_score = ob[u'MobsKilled']
             if "XPos" in ob and "ZPos" in ob:
-                self.current_pos = (ob[u'XPos'], ob[u'ZPos'])
+                self.current_pos = [round(ob[u'XPos']), round(ob[u'ZPos'])]
         elif world_state.number_of_observations_since_last_state == 0:
             self.unresponsive_count -= 1
         return observed
@@ -161,11 +174,21 @@ class Agent:
         print("Zombie kill score: ", self.zombie_kill_score)
         print("=========================================")
         print()
-        time.sleep(0.05)
+        time.sleep(MS_PER_TICK * 0.000001)
 
     def __safe_wait_for_zombies(self):
+        zombies_spawned = False
+        unresponsive_count = UNRESPONSIVE_ZOMBIES
         while True:
             world_state = self.malmo_agent.getWorldState()
+            if len(world_state.observations) != 0:
+                ob = json.loads(world_state.observations[-1].text)
+                if any(d.get('name') == 'Zombie' for d in ob["entities"]):
+                    break
+            if unresponsive_count <= 0:
+                self.__spawn_zombies()
+                unresponsive_count = UNRESPONSIVE_ZOMBIES
+            unresponsive_count -= 1
 
     def __safe_start_mission(self, mission, mission_record, role, expId):
         used_attempts = 0
@@ -224,6 +247,7 @@ class Agent:
             exit(1)
         print()
         print("Mission has started.")
+
 
     def __spawn_zombies(self):
         for _ in range(NUM_MOBS):
@@ -308,3 +332,34 @@ class Agent:
         xml += '</Mission>'
         return xml
 
+is_ipython = 'inline' in matplotlib.get_backend()
+if is_ipython:
+    from IPython import display
+
+plt.ion()
+
+def plot_table(table , variable,show_result=False):
+    is_ipython = 'inline' in matplotlib.get_backend()
+    plt.figure(1)
+    durations_t = torch.tensor(table, dtype=torch.float)
+    if show_result:
+        plt.title('Result')
+    else:
+        plt.clf()
+        plt.title('Training...')
+    plt.xlabel('Episode')
+    plt.ylabel(variable)
+    plt.plot(durations_t.numpy())
+    # Take 100 episode averages and plot them too
+    if len(durations_t) >= 100:
+        means = durations_t.unfold(0, 100, 1).mean(1).view(-1)
+        means = torch.cat((torch.zeros(99), means))
+        plt.plot(means.numpy())
+
+    plt.pause(0.001)  # pause a bit so that plots are updated
+    if is_ipython:
+        if not show_result:
+            display.display(plt.gcf())
+            display.clear_output(wait=True)
+        else:
+            display.display(plt.gcf())
