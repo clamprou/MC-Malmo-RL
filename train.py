@@ -4,7 +4,7 @@ from malmo_agent import *
 import matplotlib.pyplot as plt
 from ai_cart_pole1 import *
 
-NUM_EPISODES = 2000
+NUM_EPISODES = 200
 
 rewards = []
 scores = []
@@ -47,6 +47,7 @@ for episode in range(NUM_EPISODES):
 
             agent.update_per_tick()
             t += 1
+            agent.play_action(0)
 
     survival_time.append(agent.survival_time_score)
     player_life.append(agent.current_life)
@@ -57,7 +58,7 @@ for episode in range(NUM_EPISODES):
         kills.append(0)
 
     rewards.append(agent.episode_reward)
-    plot_table(rewards, "Rewards")
+    # plot_table(rewards, "Rewards")
 
 
 
