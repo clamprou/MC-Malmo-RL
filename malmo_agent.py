@@ -41,6 +41,11 @@ class Agent:
         self.unresponsive_count = UNRESPONSIVE_AGENT
         self.all_zombies_died = False
         self.actions = ["attack 1", "move 1", "move -1", "strafe 1", "strafe -1", "turn 0.3", "turn -0.3"]
+        self.rewards = []
+        self.kills = []
+        self.prev_kills = 0
+        self.player_life = []
+        self.survival_time = []
 
     def start_episode(self, episode):
         print("Running mission #" + str(episode))
@@ -147,7 +152,16 @@ class Agent:
         self.zombie_los_in_range = 0
         time.sleep(MS_PER_TICK * 0.000001)  # Wait a bit based on how quick we run loop
 
-    def quit_episode(self):
+
+    def update_per_episode(self):
+        self.survival_time.append(self.survival_time_score)
+        self.player_life.append(self.current_life)
+        if self.zombie_kill_score != self.prev_kills:
+            self.kills.append(self.zombie_kill_score - self.prev_kills)
+            self.prev_kills = self.zombie_kill_score
+        else:
+            self.kills.append(0)
+        self.rewards.append(self.episode_reward)
         print()
         self.malmo_agent.sendCommand("quit")
         print("All Zombies Died") if self.all_zombies_died else print("Agent Died")

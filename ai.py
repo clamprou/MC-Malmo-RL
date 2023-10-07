@@ -24,8 +24,8 @@ class Network(nn.Module):
 
     def forward(self, state):
         x = F.relu(self.fc1(state))
-        x1 = self.fc2(state)
-        q_values = self.fc3(x1)
+        x = self.fc2(state)
+        q_values = self.fc3(x)
         return q_values
 
 # Implementing Experience Replay
