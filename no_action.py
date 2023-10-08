@@ -10,7 +10,6 @@ for episode in range(NUM_EPISODES):
     t = 0
     while agent.is_episode_running():
         if agent.observe_env():
-            agent.play_action(0)
             print("reward:"+str(agent.episode_reward)+"[zombie_los:"+str(agent.zombie_los_in_range)+" zombie_los_range:" +
                   str(agent.zombie_los)+" agent_pos:("+str(agent.current_pos[0])+","+str(agent.current_pos[1])
                   + ") zombie_pos:("+str(agent.zombies_pos[0])+"," + str(agent.zombies_pos[1]) + ")" + " life:" +

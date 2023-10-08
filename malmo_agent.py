@@ -113,7 +113,7 @@ class Agent:
                     if d.get('name') == 'Zombie':
                         self.zombies_pos = [round(d.get('x')), round(d.get('z'))]
 
-            # Observe and normalize rewards
+            # Observe environment
 
             cur_zombies_alive = list(d.get('name') == 'Zombie' for d in ob["entities"]).count(True)
             if cur_zombies_alive - self.zombies_alive != 0:
