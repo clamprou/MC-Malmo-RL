@@ -9,13 +9,11 @@ for episode in range(NUM_EPISODES):
     agent.start_episode(episode)
     t = 0
     while agent.is_episode_running():
-        if agent.observe_env():
-            print("reward:"+str(agent.episode_reward)+"[zombie_los:"+str(agent.zombie_los_in_range)+" zombie_los_range:" +
-                  str(agent.zombie_los)+" agent_pos:("+str(agent.current_pos[0])+","+str(agent.current_pos[1])
-                  + ") zombie_pos:("+str(agent.zombies_pos[0])+"," + str(agent.zombies_pos[1]) + ")" + " life:" +
-                  str(agent.current_life))
-            agent.update_per_tick()
-            t += 1
+        agent.observe_env()
+        agent.print_observations()
+        agent.update_per_tick()
+        print("Episode Reward:", str(agent.episode_reward))
+        t += 1
 
     agent.update_per_episode()
     # plot_table(agent.rewards, "rewards")

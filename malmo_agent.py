@@ -12,11 +12,11 @@ import matplotlib
 import torch
 from matplotlib import pyplot as plt
 
-MS_PER_TICK = 25
+MS_PER_TICK = 5
 
 NUM_AGENTS = 1
 NUM_MOBS = 1
-UNRESPONSIVE_AGENT = (1000 / 2 * MS_PER_TICK) + 500000
+UNRESPONSIVE_AGENT = 500 / (2 * MS_PER_TICK)
 UNRESPONSIVE_ZOMBIES = (1000 / 2 * MS_PER_TICK) + 10000000
 
 
@@ -56,7 +56,7 @@ class Agent:
         time.sleep(MS_PER_TICK * 0.000001)
         # Make sure no Zombies are spawn
         self.malmo_agent.sendCommand("chat /kill @e[type=!player]")
-        time.sleep(MS_PER_TICK * 0.000001)
+        time.sleep(MS_PER_TICK * 0.0001)
         # Spawn the Zombies
         self.__spawn_zombies()
         self.malmo_agent.sendCommand("chat /gamerule naturalRegeneration false")
@@ -89,32 +89,28 @@ class Agent:
             self.malmo_agent.sendCommand("strafe 0")
 
     def observe_env(self):
-        observed = False  # keep track if agent observe something from the environment
         world_state = self.malmo_agent.getWorldState()
 
         # Agent gets rewards automatically by the platform defined in mission xml
         if world_state.number_of_rewards_since_last_state > 0:
-            observed = True
             for rew in world_state.rewards:
                 self.tick_reward += rew.getValue()
                 print("Reward: +", self.tick_reward)
 
         # If Agent is steel alive we observe the changes on the environment and calculate our own rewards
         if world_state.number_of_observations_since_last_state > 0:
-            self.tick_reward -= 0.5
-            observed = True
+            self.tick_reward -= 0.1  # -0.1 per tick pass
             self.unresponsive_count = UNRESPONSIVE_AGENT
             ob = json.loads(world_state.observations[-1].text)
 
             if all(d.get('name') != 'Zombie' for d in ob["entities"]):
                 self.all_zombies_died = True
-            else:
+            else:  # Update Zombies position
                 for d in ob["entities"]:
                     if d.get('name') == 'Zombie':
                         self.zombies_pos = [round(d.get('x')), round(d.get('z'))]
 
             # Observe environment
-
             cur_zombies_alive = list(d.get('name') == 'Zombie' for d in ob["entities"]).count(True)
             if cur_zombies_alive - self.zombies_alive != 0:
                 self.tick_reward += 100
@@ -138,10 +134,9 @@ class Agent:
                 self.current_pos = [round(ob[u'XPos']), round(ob[u'ZPos'])]
         elif world_state.number_of_observations_since_last_state == 0:
             self.unresponsive_count -= 1
-            if self.unresponsive_count <= 0:
-                self.tick_reward -= 100
-                print("Reward: -100")
-        return observed
+        if self.unresponsive_count <= 0 and not self.all_zombies_died:  # Agent died but we are here one tick before episode ends
+            self.tick_reward -= 100
+            print("Reward: -100")
 
     def update_per_tick(self):
         self.total_reward += self.tick_reward  # Update total reward, never restore to 0
@@ -317,7 +312,7 @@ class Agent:
               <ChatCommands/>
               <MissionQuitCommands/>
                 <RewardForDamagingEntity>
-                    <Mob reward="20" type="Zombie"/>
+                    <Mob reward="30" type="Zombie"/>
                 </RewardForDamagingEntity>
               <ObservationFromNearbyEntities>
                 <Range name="entities" xrange="40" yrange="2" zrange="40"/>
@@ -345,6 +340,13 @@ class Agent:
 
         xml += '</Mission>'
         return xml
+
+    def print_observations(self):
+        print("Tick Reward:"+str(self.tick_reward)+"[zombie_los:"+str(self.zombie_los_in_range)+" zombie_los_range:" +
+              str(self.zombie_los)+" agent_pos:("+str(self.current_pos[0])+","+str(self.current_pos[1])
+              + ") zombie_pos:("+str(self.zombies_pos[0])+"," + str(self.zombies_pos[1]) + ")" + " life:" +
+              str(self.current_life))
+
 
 is_ipython = 'inline' in matplotlib.get_backend()
 if is_ipython:
