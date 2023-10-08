@@ -10,9 +10,10 @@ for episode in range(NUM_EPISODES):
     t = 0
     while agent.is_episode_running():
         agent.observe_env()
-        agent.print_observations()
+        # print("State:", agent.state)
+        # print("Tick Reward:", agent.tick_reward)
+        # print("Sum Reward:", str(agent.episode_reward))
         agent.update_per_tick()
-        print("Episode Reward:", str(agent.episode_reward))
         t += 1
 
     agent.update_per_episode()
