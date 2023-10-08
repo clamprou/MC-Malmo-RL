@@ -12,7 +12,7 @@ import matplotlib
 import torch
 from matplotlib import pyplot as plt
 
-MS_PER_TICK = 5
+MS_PER_TICK = 25
 
 NUM_AGENTS = 1
 NUM_MOBS = 1
@@ -73,19 +73,19 @@ class Agent:
         action = self.actions[action_number]
         if action == "attack 1":
             self.malmo_agent.sendCommand(action)
-            time.sleep(MS_PER_TICK * 0.02)
+            time.sleep(MS_PER_TICK * 0.005)
             self.malmo_agent.sendCommand("attack 0")
         elif action == "turn 0.3" or action == "turn -0.3":
             self.malmo_agent.sendCommand(action)
-            time.sleep(MS_PER_TICK * 0.01)
+            time.sleep(MS_PER_TICK * 0.005)
             self.malmo_agent.sendCommand("turn 0")
         elif action == "move 1" or action == "move -1":
             self.malmo_agent.sendCommand(action)
-            time.sleep(MS_PER_TICK * 0.01)
+            time.sleep(MS_PER_TICK * 0.005)
             self.malmo_agent.sendCommand("move 0")
         elif action == "strafe 1" or action == "strafe -1":
             self.malmo_agent.sendCommand(action)
-            time.sleep(MS_PER_TICK * 0.01)
+            time.sleep(MS_PER_TICK * 0.005)
             self.malmo_agent.sendCommand("strafe 0")
 
     def observe_env(self):
@@ -96,21 +96,18 @@ class Agent:
         if world_state.number_of_rewards_since_last_state > 0:
             observed = True
             for rew in world_state.rewards:
-                if rew.getValue() > 1:
-                    self.tick_reward += 0.05
-                else:
-                    self.tick_reward += rew.getValue() * 0.05
-                print("Last Reward:", self.tick_reward)
+                self.tick_reward += rew.getValue()
+                print("Reward: +", self.tick_reward)
 
         # If Agent is steel alive we observe the changes on the environment and calculate our own rewards
         if world_state.number_of_observations_since_last_state > 0:
+            self.tick_reward -= 0.5
             observed = True
             self.unresponsive_count = UNRESPONSIVE_AGENT
             ob = json.loads(world_state.observations[-1].text)
 
             if all(d.get('name') != 'Zombie' for d in ob["entities"]):
                 self.all_zombies_died = True
-                self.tick_reward += self.current_life * 0.025
             else:
                 for d in ob["entities"]:
                     if d.get('name') == 'Zombie':
@@ -120,9 +117,8 @@ class Agent:
 
             cur_zombies_alive = list(d.get('name') == 'Zombie' for d in ob["entities"]).count(True)
             if cur_zombies_alive - self.zombies_alive != 0:
-                self.tick_reward += abs(cur_zombies_alive - self.zombies_alive) * 0.35
-                print("Agent killed a Zombie and got reward:", abs(cur_zombies_alive - self.zombies_alive) * 0.35)
-                print("last Reward:", self.tick_reward)
+                self.tick_reward += 100
+                print("Reward: +100")
             self.zombies_alive = cur_zombies_alive
             if u'LineOfSight' in ob:
                 los = ob[u'LineOfSight']
@@ -142,6 +138,9 @@ class Agent:
                 self.current_pos = [round(ob[u'XPos']), round(ob[u'ZPos'])]
         elif world_state.number_of_observations_since_last_state == 0:
             self.unresponsive_count -= 1
+            if self.unresponsive_count <= 0:
+                self.tick_reward -= 100
+                print("Reward: -100")
         return observed
 
     def update_per_tick(self):
@@ -318,7 +317,7 @@ class Agent:
               <ChatCommands/>
               <MissionQuitCommands/>
                 <RewardForDamagingEntity>
-                    <Mob reward="1" type="Zombie"/>
+                    <Mob reward="20" type="Zombie"/>
                 </RewardForDamagingEntity>
               <ObservationFromNearbyEntities>
                 <Range name="entities" xrange="40" yrange="2" zrange="40"/>
