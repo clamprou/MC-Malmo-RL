@@ -49,7 +49,7 @@ class Agent:
         self.player_life = []
         self.survival_time = []
         self.state = [self.zombie_los_in_range, self.zombie_los, self.current_pos[0]
-            , self.current_pos[1], self.current_life, self.yaw, self.zombie_yaw]
+            , self.current_pos[1], self.current_life, self.yaw, self.zombie_yaw, ]
 
     def start_episode(self, episode):
         print("Running mission #" + str(episode))
