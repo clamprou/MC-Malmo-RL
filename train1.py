@@ -14,7 +14,6 @@ for episode in range(NUM_EPISODES):
         action = select_action(state)
         agent.play_action(action.item())
         agent.observe_env()
-        print("Sum Reward:", str(agent.episode_reward))
         reward = torch.tensor([agent.tick_reward], device=device)
         next_state = torch.tensor(agent.state, dtype=torch.float32, device=device).unsqueeze(0)
         memory.push(state, action, next_state, reward)

@@ -69,7 +69,7 @@ TAU = 0.005
 LR = 1e-4
 
 # Get number of actions from gym action space
-n_actions = 7
+n_actions = 8
 # Get the number of state observations
 n_observations = 7
 
@@ -78,7 +78,7 @@ target_net = DQN(n_observations, n_actions).to(device)
 target_net.load_state_dict(policy_net.state_dict())
 
 optimizer = optim.AdamW(policy_net.parameters(), lr=LR, amsgrad=True)
-memory = ReplayMemory(10000)
+memory = ReplayMemory(100000)
 
 
 steps_done = 0
@@ -97,7 +97,7 @@ def select_action(state):
             # found, so we pick action with the larger expected reward.
             return policy_net(state).max(1)[1].view(1, 1)
     else:
-        return torch.tensor([[random.randint(0, 6)]], device=device, dtype=torch.long)
+        return torch.tensor([[random.randint(0, 7)]], device=device, dtype=torch.long)
 
 
 episode_durations = []

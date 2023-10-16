@@ -42,7 +42,7 @@ class Agent:
         self.zombie_yaw = 0
         self.unresponsive_count = UNRESPONSIVE_AGENT
         self.all_zombies_died = False
-        self.actions = ["attack 1", "move 1", "move -1", "strafe 1", "strafe -1", "turn 0.3", "turn -0.3"]
+        self.actions = ["attack 1", "move 1", "move -1", "strafe 1", "strafe -1", "turn 0.3", "turn -0.3", "None"]
         self.rewards = []
         self.kills = []
         self.prev_kills = 0
@@ -92,6 +92,8 @@ class Agent:
             self.malmo_agent.sendCommand(action)
             time.sleep(MS_PER_TICK * 0.000001)
             self.malmo_agent.sendCommand("strafe 0")
+        elif action == "None":
+            time.sleep(MS_PER_TICK * 0.000001)
 
     def observe_env(self):
         world_state = self.malmo_agent.getWorldState()
@@ -136,6 +138,9 @@ class Agent:
                 life = ob[u'Life']
                 if round(life) != round(self.current_life):
                     self.current_life = round(life)
+                    # Here Agent got hit and lost life, so we will punish him
+                    self.tick_reward -= 5
+                    print("Life changed: -5 reward")
             if "MobsKilled" in ob:
                 self.zombie_kill_score = ob[u'MobsKilled']
             if "XPos" in ob and "ZPos" in ob:
