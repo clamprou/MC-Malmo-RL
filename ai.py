@@ -71,7 +71,7 @@ LR = 1e-4
 # Get number of actions from gym action space
 n_actions = 8
 # Get the number of state observations
-n_observations = 7
+n_observations = 9
 
 policy_net = DQN(n_observations, n_actions).to(device)
 target_net = DQN(n_observations, n_actions).to(device)

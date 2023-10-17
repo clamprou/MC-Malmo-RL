@@ -3,7 +3,7 @@ from __future__ import division
 from malmo_agent import *
 from ai import *
 
-NUM_EPISODES = 500
+NUM_EPISODES = 1000
 agent = Agent()
 
 for episode in range(NUM_EPISODES):
@@ -14,6 +14,7 @@ for episode in range(NUM_EPISODES):
         action = select_action(state)
         agent.play_action(action.item())
         agent.observe_env()
+        print(agent.state)
         reward = torch.tensor([agent.tick_reward], device=device)
         next_state = torch.tensor(agent.state, dtype=torch.float32, device=device).unsqueeze(0)
         memory.push(state, action, next_state, reward)
@@ -28,7 +29,7 @@ for episode in range(NUM_EPISODES):
         t += 1
 
     agent.update_per_episode()
-    plot_table(agent.rewards, "rewards")
+    # plot_table(agent.rewards, "rewards")
 
 print('Complete')
 plot_table(agent.rewards, "rewards", show_result=True)

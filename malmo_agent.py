@@ -49,7 +49,7 @@ class Agent:
         self.player_life = []
         self.survival_time = []
         self.state = [self.zombie_los_in_range, self.zombie_los, self.current_pos[0]
-            , self.current_pos[1], self.current_life, self.yaw, self.zombie_yaw, ]
+            , self.current_pos[1], self.current_life, self.yaw, self.zombie_yaw, self.zombies_pos[0], self.zombies_pos[1]]
 
     def start_episode(self, episode):
         print("Running mission #" + str(episode))
@@ -150,8 +150,8 @@ class Agent:
         if self.unresponsive_count <= 0 and not self.all_zombies_died:  # Agent died but we are here one tick before episode ends
             self.tick_reward -= 100
             print("Reward: -100")
-        self.state = [self.zombie_los_in_range, self.zombie_los, self.current_pos[0], self.current_pos[1],
-                      self.current_life, self.yaw, self.zombie_yaw]
+        self.state = [self.zombie_los_in_range, self.zombie_los, self.current_pos[0]
+            , self.current_pos[1], self.current_life, self.yaw, self.zombie_yaw, self.zombies_pos[0], self.zombies_pos[1]]
         self.total_reward += self.tick_reward  # Update total reward, never restore to 0
         self.episode_reward += self.tick_reward  # Update reward per episode, restore to 0 after each episode ends
 
@@ -190,8 +190,8 @@ class Agent:
         self.current_life = 20
         self.yaw = 0
         self.zombie_yaw = 0
-        self.state = [self.zombie_los_in_range, self.zombie_los, self.current_pos[0],
-                      self.current_pos[1], self.current_life, self.yaw, self.zombie_yaw]
+        self.state = [self.zombie_los_in_range, self.zombie_los, self.current_pos[0]
+            , self.current_pos[1], self.current_life, self.yaw, self.zombie_yaw, self.zombies_pos[0], self.zombies_pos[1]]
     def print_finish_data(self):
         print()
         print("=========================================")
