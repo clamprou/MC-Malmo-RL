@@ -15,7 +15,7 @@ from matplotlib import pyplot as plt
 MS_PER_TICK = 5
 
 NUM_AGENTS = 1
-NUM_MOBS = 1
+NUM_MOBS = 3
 UNRESPONSIVE_AGENT = 400 / (2 * MS_PER_TICK)
 UNRESPONSIVE_ZOMBIES = (1000 / 2 * MS_PER_TICK) + 10000000
 
@@ -23,7 +23,6 @@ UNRESPONSIVE_ZOMBIES = (1000 / 2 * MS_PER_TICK) + 10000000
 
 class Agent:
     def __init__(self):
-        self.zombies_pos = [0, 0]
         self.episode_reward = 0  # Rewards per tick
         self.tick_reward = 0  # Rewards per episode
         self.total_reward = 0  # Total rewards, never restore to 0
@@ -39,7 +38,8 @@ class Agent:
         self.current_life = 20
         self.current_pos = [0, 0]
         self.yaw = 0
-        self.zombie_yaw = 0
+        self.zombies_pos = [[0, 0], [0, 0], [0, 0]]
+        self.zombie_yaw = [0, 0, 0]
         self.unresponsive_count = UNRESPONSIVE_AGENT
         self.all_zombies_died = False
         self.actions = ["attack 1", "move 1", "move -1", "strafe 1", "strafe -1", "turn 0.3", "turn -0.3", "None"]
@@ -49,7 +49,9 @@ class Agent:
         self.player_life = []
         self.survival_time = []
         self.state = [self.zombie_los_in_range, self.zombie_los, self.current_pos[0]
-            , self.current_pos[1], self.current_life, self.yaw, self.zombie_yaw, self.zombies_pos[0], self.zombies_pos[1]]
+            , self.current_pos[1], self.current_life, self.yaw, self.zombie_yaw[0], self.zombie_yaw[1], self.zombie_yaw[2]
+            , self.zombies_pos[0][0], self.zombies_pos[0][1], self.zombies_pos[1][0], self.zombies_pos[1][1],
+                      self.zombies_pos[2][0], self.zombies_pos[2][1]]
 
     def start_episode(self, episode):
         print("Running mission #" + str(episode))
@@ -110,15 +112,17 @@ class Agent:
             self.unresponsive_count = UNRESPONSIVE_AGENT
             ob = json.loads(world_state.observations[-1].text)
 
-            if len(ob[u'entities']) == 2:
+            if len(ob[u'entities']) >= 2:
                 self.yaw = round(ob[u'entities'][0][u'yaw'] % 360)
-                self.zombie_yaw = round(ob[u'entities'][1][u'yaw'] % 360)
             if all(d.get('name') != 'Zombie' for d in ob["entities"]):
                 self.all_zombies_died = True
             else:  # Update Zombies position
+                k = 0
                 for d in ob["entities"]:
                     if d.get('name') == 'Zombie':
-                        self.zombies_pos = [round(d.get('x')), round(d.get('z'))]
+                        self.zombies_pos[k] = [round(d.get('x')), round(d.get('z'))]
+                        self.zombie_yaw[k] = round(d.get('yaw') % 360)
+                        k += 1
 
             # Observe environment
             cur_zombies_alive = list(d.get('name') == 'Zombie' for d in ob["entities"]).count(True)
@@ -147,11 +151,13 @@ class Agent:
                 self.current_pos = [round(ob[u'XPos']), round(ob[u'ZPos'])]
         elif world_state.number_of_observations_since_last_state == 0:
             self.unresponsive_count -= 1
-        if self.unresponsive_count <= 0 and not self.all_zombies_died:  # Agent died but we are here one tick before episode ends
+        if self.unresponsive_count <= 0 and not self.all_zombies_died:  # Agent died but we are here one tick before episode ends, so we punish him
             self.tick_reward -= 100
             print("Reward: -100")
         self.state = [self.zombie_los_in_range, self.zombie_los, self.current_pos[0]
-            , self.current_pos[1], self.current_life, self.yaw, self.zombie_yaw, self.zombies_pos[0], self.zombies_pos[1]]
+            , self.current_pos[1], self.current_life, self.yaw, self.zombie_yaw[0], self.zombie_yaw[1], self.zombie_yaw[2]
+            , self.zombies_pos[0][0], self.zombies_pos[0][1], self.zombies_pos[1][0], self.zombies_pos[1][1],
+                      self.zombies_pos[2][0], self.zombies_pos[2][1]]
         self.total_reward += self.tick_reward  # Update total reward, never restore to 0
         self.episode_reward += self.tick_reward  # Update reward per episode, restore to 0 after each episode ends
 
@@ -189,9 +195,12 @@ class Agent:
         self.current_pos = [0, 0]
         self.current_life = 20
         self.yaw = 0
-        self.zombie_yaw = 0
+        self.zombie_yaw = [0, 0, 0]
+        self.zombies_pos = [[0, 0], [0, 0], [0, 0]]
         self.state = [self.zombie_los_in_range, self.zombie_los, self.current_pos[0]
-            , self.current_pos[1], self.current_life, self.yaw, self.zombie_yaw, self.zombies_pos[0], self.zombies_pos[1]]
+            , self.current_pos[1], self.current_life, self.yaw, self.zombie_yaw[0], self.zombie_yaw[1], self.zombie_yaw[2]
+            , self.zombies_pos[0][0], self.zombies_pos[0][1], self.zombies_pos[1][0], self.zombies_pos[1][1],
+                      self.zombies_pos[2][0], self.zombies_pos[2][1]]
     def print_finish_data(self):
         print()
         print("=========================================")
@@ -212,7 +221,8 @@ class Agent:
             if len(world_state.observations) != 0:
                 ob = json.loads(world_state.observations[-1].text)
                 if any(d.get('name') == 'Zombie' for d in ob["entities"]):
-                    break
+                    if len(ob["entities"]) == NUM_MOBS + 1:
+                        break
             if unresponsive_count <= 0:
                 self.__spawn_zombies()
                 unresponsive_count = UNRESPONSIVE_ZOMBIES
