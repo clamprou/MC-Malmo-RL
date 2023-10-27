@@ -23,6 +23,7 @@ UNRESPONSIVE_ZOMBIES = (1000 / 2 * MS_PER_TICK) + 10000000
 
 class Agent:
     def __init__(self):
+        self.first_time = False
         self.episode_reward = 0  # Rewards per tick
         self.tick_reward = 0  # Rewards per episode
         self.total_reward = 0  # Total rewards, never restore to 0
@@ -53,9 +54,9 @@ class Agent:
             , self.zombies_pos[0][0], self.zombies_pos[0][1], self.zombies_pos[1][0], self.zombies_pos[1][1],
                       self.zombies_pos[2][0], self.zombies_pos[2][1]]
 
-    def start_episode(self, episode):
-        print("Running mission #" + str(episode))
-        mission = MalmoPython.MissionSpec(self.__get_xml("true" if episode == 0 else "false"), True)
+    def start_episode(self):
+        mission = MalmoPython.MissionSpec(self.__get_xml("true" if self.first_time else "false"), True)
+        self.first_time = False
         experimentID = str(uuid.uuid4())
         self.__safe_start_mission(mission, MalmoPython.MissionRecordSpec(), 0, experimentID)
         self.__safe_wait_for_start()
@@ -369,6 +370,9 @@ class Agent:
 
         xml += '</Mission>'
         return xml
+
+    def sleep(self):
+        time.sleep(MS_PER_TICK * 0.000001)
 
 
 is_ipython = 'inline' in matplotlib.get_backend()

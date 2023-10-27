@@ -1,6 +1,6 @@
 import gym
 from gym import spaces
-from malmo_agent_gym import Agent
+from malmo_agent import Agent
 
 
 class FightingZombiesDisc(gym.Env):
