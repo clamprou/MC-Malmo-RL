@@ -8,8 +8,8 @@ NUM_EPISODES = 2500
 env = FightingZombiesDisc()
 
 for episode in range(NUM_EPISODES):
-    print("Running mission #" + str(episode)) # problem
     state, done = env.reset()
+    print("Running mission #" + str(episode)) # problem
     t = 0
     state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
     while not done:

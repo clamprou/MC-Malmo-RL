@@ -23,7 +23,7 @@ UNRESPONSIVE_ZOMBIES = (1000 / 2 * MS_PER_TICK) + 10000000
 
 class Agent:
     def __init__(self):
-        self.first_time = False
+        self.first_time = True
         self.episode_reward = 0  # Rewards per tick
         self.tick_reward = 0  # Rewards per episode
         self.total_reward = 0  # Total rewards, never restore to 0
