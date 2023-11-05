@@ -55,10 +55,10 @@ class Agent:
                       self.zombies_pos[2][0], self.zombies_pos[2][1]]
 
     def start_episode(self):
-        mission = MalmoPython.MissionSpec(self.__get_xml("true" if self.first_time else "false"), True)
+        self.mission = MalmoPython.MissionSpec(self.__get_xml("true" if self.first_time else "false"), True)
         self.first_time = False
         experimentID = str(uuid.uuid4())
-        self.__safe_start_mission(mission, MalmoPython.MissionRecordSpec(), 0, experimentID)
+        self.__safe_start_mission(self.mission, MalmoPython.MissionRecordSpec(), 0, experimentID)
         self.__safe_wait_for_start()
         time.sleep(MS_PER_TICK * 0.000001)
         # Make sure no Zombies are spawn
