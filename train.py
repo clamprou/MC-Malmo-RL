@@ -15,6 +15,7 @@ for episode in range(NUM_EPISODES):
     while not done:
         action = select_action(state)
         observation, reward, done = env.step(action.item())
+        print(observation)
         reward = torch.tensor([reward], device=device)
         next_state = torch.tensor(observation, dtype=torch.float32, device=device).unsqueeze(0)
         memory.push(state, action, next_state, reward)

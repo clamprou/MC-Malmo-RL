@@ -1,20 +1,63 @@
+import math
 import gym
 from gym import spaces
+import numpy as np
 from malmo_agent import Agent
 
 
 class FightingZombiesDisc(gym.Env):
 
-    def __init__(self, render_mode=None, size=5):
-        self.agent = Agent()
-        self.action_space = spaces.Discrete(len(self.agent.actions))
-        self.observation_space_n = len(self.agent.state)
+    def __init__(self, render_mode=None, agents=1):
+        self.agent = Agent(agents)
+        self.render_mode = render_mode
+        self.action_space = spaces.Box(
+            np.array([-1, -1, -1]).astype(np.float32),
+            np.array([ 1, 1, 1]).astype(np.float32),)
+        high = np.array(
+            [
+                1,
+                1,
+                19,
+                19,
+                20,
+                360,
+                360,
+                360,
+                360,
+                19,
+                19,
+                19,
+                19,
+                19,
+                19,
+            ]
+        ).astype(np.float32)
+        low = np.array( #TODO Propably wrong
+            [
+                0,
+                0,
+                -19,
+                -19,
+                0,
+                -360,
+                -360,
+                -360,
+                -360,
+                -19,
+                -19,
+                -19,
+                -19,
+                -19,
+                -19,
+            ]
+        ).astype(np.float32)
+        self.observation_space = spaces.Box(low, high)
 
     def reset(self, seed=None, options=None):
         if not self.agent.first_time:
             self.agent.update_per_episode()
         self.agent.start_episode()
-        return self.agent.state, not(self.agent.is_episode_running())
+        return self.agent.state
 
     def step(self, action):
         self.agent.tick_reward = 0  # Restore reward per tick, since tick just started
