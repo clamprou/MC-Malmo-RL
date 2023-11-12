@@ -4,12 +4,12 @@ from malmo_agent import *
 from ai import *
 from gym_env import FightingZombiesDisc
 
-NUM_EPISODES = 2500
+NUM_EPISODES = 2000
 env = FightingZombiesDisc()
 
 for episode in range(NUM_EPISODES):
-    state, done = env.reset()
-    print("Running mission #" + str(episode)) # problem
+    state, done = env.reset(), False
+    print("Running mission #" + str(episode))
     t = 0
     state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
     while not done:
@@ -26,8 +26,7 @@ for episode in range(NUM_EPISODES):
             target_net_state_dict[key] = policy_net_state_dict[key]*TAU + target_net_state_dict[key]*(1-TAU)
         target_net.load_state_dict(target_net_state_dict)
         t += 1
-
-    # plot_table(agent.rewards, "rewards")
+    # plot_table(env.agent.rewards, "rewards")
 
 print('Complete')
 plot_table(env.agent.rewards, "rewards", show_result=True)

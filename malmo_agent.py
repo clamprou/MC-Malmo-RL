@@ -12,17 +12,17 @@ import matplotlib
 import torch
 from matplotlib import pyplot as plt
 
-MS_PER_TICK = 5
+MS_PER_TICK = 10
 
 NUM_AGENTS = 1
 NUM_MOBS = 3
-UNRESPONSIVE_AGENT = 400 / (2 * MS_PER_TICK)
-UNRESPONSIVE_ZOMBIES = (1000 / 2 * MS_PER_TICK) + 10000000
+UNRESPONSIVE_AGENT = 100 / MS_PER_TICK
+UNRESPONSIVE_ZOMBIES = 500 / MS_PER_TICK
 
 
 
 class Agent:
-    def __init__(self):
+    def __init__(self, agents=1):
         self.first_time = True
         self.episode_reward = 0  # Rewards per tick
         self.tick_reward = 0  # Rewards per episode
@@ -34,7 +34,7 @@ class Agent:
         self.zombie_kill_score = 0  # Good! Help rescue humanity from zombie-kind.
         self.malmo_agent = MalmoPython.AgentHost()
         self.client_pool = MalmoPython.ClientPool()
-        self.client_pool.add(MalmoPython.ClientInfo('127.0.0.1', 10000))
+        self.client_pool.add(MalmoPython.ClientInfo('127.0.0.1', 10000 + agents-1))
         self.running = True
         self.current_life = 20
         self.current_pos = [0, 0]
@@ -60,18 +60,13 @@ class Agent:
         experimentID = str(uuid.uuid4())
         self.__safe_start_mission(self.mission, MalmoPython.MissionRecordSpec(), 0, experimentID)
         self.__safe_wait_for_start()
-        time.sleep(MS_PER_TICK * 0.000001)
-        # Make sure no Zombies are spawn
-        self.malmo_agent.sendCommand("chat /kill @e[type=!player]")
-        time.sleep(MS_PER_TICK * 0.001)
-        # Spawn the Zombies
-        self.__spawn_zombies()
+        self.__safe_wait_for_zombies()
+        time.sleep(MS_PER_TICK * 0.002)
         self.malmo_agent.sendCommand("chat /gamerule naturalRegeneration false")
         self.malmo_agent.sendCommand("chat /gamerule doMobLoot false")
         self.malmo_agent.sendCommand("chat /difficulty 1")
         self.unresponsive_count = UNRESPONSIVE_AGENT
         self.all_zombies_died = False
-        self.__safe_wait_for_zombies()
         time.sleep(MS_PER_TICK * 0.001)
 
     def is_episode_running(self):
@@ -145,7 +140,7 @@ class Agent:
                     self.current_life = round(life)
                     # Here Agent got hit and lost life, so we will punish him
                     self.tick_reward -= 5
-                    print("Life changed: -5 reward")
+                    # print("Life changed: -5 reward")
             if "MobsKilled" in ob:
                 self.zombie_kill_score = ob[u'MobsKilled']
             if "XPos" in ob and "ZPos" in ob:
@@ -178,7 +173,10 @@ class Agent:
         self.rewards.append(self.episode_reward)
         print()
         self.malmo_agent.sendCommand("quit")
-        print("All Zombies Died") if self.all_zombies_died else print("Agent Died")
+        if self.all_zombies_died:
+            print("All Zombies Died")
+        elif self.unresponsive_count <= 0:
+            print("Agent Died")
         print("Waiting for mission to end ", end=' ')
         hasEnded = False
         while not hasEnded:
@@ -215,19 +213,21 @@ class Agent:
         time.sleep(MS_PER_TICK * 0.000001)
 
     def __safe_wait_for_zombies(self):
-        zombies_spawned = False
         unresponsive_count = UNRESPONSIVE_ZOMBIES
         while True:
             world_state = self.malmo_agent.getWorldState()
             if len(world_state.observations) != 0:
                 ob = json.loads(world_state.observations[-1].text)
                 if any(d.get('name') == 'Zombie' for d in ob["entities"]):
-                    if len(ob["entities"]) == NUM_MOBS + 1:
+                    if len(ob["entities"]) == NUM_MOBS + NUM_AGENTS:
                         break
             if unresponsive_count <= 0:
-                self.__spawn_zombies()
-                unresponsive_count = UNRESPONSIVE_ZOMBIES
+                print("Quit!")
+                self.malmo_agent.sendCommand("quit")
+                time.sleep(3)
+                self.start_episode()
             unresponsive_count -= 1
+            time.sleep(MS_PER_TICK * 0.001)
 
     def __safe_start_mission(self, mission, mission_record, role, expId):
         used_attempts = 0
@@ -298,6 +298,14 @@ class Agent:
                 + " {HealF:10.0f}"
             )
 
+    def drawMobs(self):
+        xml = ""
+        for i in range(NUM_MOBS):
+            x = str(random.randint(-15,15))
+            z = str(random.randint(-15,15))
+            xml += '<DrawEntity x="' + x + '" y="202" z="' + z + '" type="Zombie"/>'
+        return xml
+
     def __get_xml(self, reset):
         xml = '''<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
         <Mission xmlns="http://ProjectMalmo.microsoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -318,6 +326,7 @@ class Agent:
               <DrawingDecorator>
                 <DrawCuboid x1="-19" y1="200" z1="-19" x2="19" y2="235" z2="19" type="wool" colour="ORANGE"/>
                 <DrawCuboid x1="-18" y1="202" z1="-18" x2="18" y2="247" z2="18" type="air"/>
+                ''' + self.drawMobs() + '''
                 <DrawBlock x="0" y="226" z="0" type="fence"/>
                 <DrawCuboid x1="-19" y1="235" z1="-19" x2="19" y2="255" z2="19" type="wool" colour="ORANGE"/>
               </DrawingDecorator>
