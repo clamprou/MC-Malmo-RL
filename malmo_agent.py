@@ -76,22 +76,22 @@ class Agent:
         action = self.actions[action_number]
         if action == "attack 1":
             self.malmo_agent.sendCommand(action)
-            time.sleep(MS_PER_TICK * 0.000001)
+            time.sleep(MS_PER_TICK * 0.02)
             self.malmo_agent.sendCommand("attack 0")
         elif action == "turn 0.3" or action == "turn -0.3":
             self.malmo_agent.sendCommand(action)
-            time.sleep(MS_PER_TICK * 0.000001)
+            time.sleep(MS_PER_TICK * 0.0002)
             self.malmo_agent.sendCommand("turn 0")
         elif action == "move 1" or action == "move -1":
             self.malmo_agent.sendCommand(action)
-            time.sleep(MS_PER_TICK * 0.000001)
+            time.sleep(MS_PER_TICK * 0.0002)
             self.malmo_agent.sendCommand("move 0")
         elif action == "strafe 1" or action == "strafe -1":
             self.malmo_agent.sendCommand(action)
-            time.sleep(MS_PER_TICK * 0.000001)
+            time.sleep(MS_PER_TICK * 0.0002)
             self.malmo_agent.sendCommand("strafe 0")
         elif action == "None":
-            time.sleep(MS_PER_TICK * 0.000001)
+            time.sleep(MS_PER_TICK * 0.0002)
 
     def observe_env(self):
         world_state = self.malmo_agent.getWorldState()
