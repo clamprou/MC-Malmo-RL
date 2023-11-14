@@ -43,7 +43,7 @@ class Agent:
         self.zombie_yaw = [0, 0, 0]
         self.unresponsive_count = UNRESPONSIVE_AGENT
         self.all_zombies_died = False
-        self.actions = ["attack 1", "move 1", "move -1", "strafe 1", "strafe -1", "turn 0.3", "turn -0.3", "None"]
+        self.actions = ["attack 1", "move 1", "move -1", "strafe 1", "strafe -1", "turn 0.3", "turn -0.3"]
         self.rewards = []
         self.kills = []
         self.prev_kills = 0
@@ -90,8 +90,6 @@ class Agent:
             self.malmo_agent.sendCommand(action)
             time.sleep(MS_PER_TICK * 0.0032)
             self.malmo_agent.sendCommand("strafe 0")
-        elif action == "None":
-            time.sleep(MS_PER_TICK * 0.02)
 
     def observe_env(self):
         world_state = self.malmo_agent.getWorldState()
@@ -109,7 +107,7 @@ class Agent:
             ob = json.loads(world_state.observations[-1].text)
 
             if len(ob[u'entities']) >= 2:
-                self.yaw = round(ob[u'entities'][0][u'yaw'] % 360)
+                self.yaw = ob[u'entities'][0][u'yaw'] % 360
             if all(d.get('name') != 'Zombie' for d in ob["entities"]):
                 self.all_zombies_died = True
             else:  # Update Zombies position
@@ -117,7 +115,7 @@ class Agent:
                 for d in ob["entities"]:
                     if d.get('name') == 'Zombie':
                         self.zombies_pos[k] = [round(d.get('x')), round(d.get('z'))]
-                        self.zombie_yaw[k] = round(d.get('yaw') % 360)
+                        self.zombie_yaw[k] = d.get('yaw') % 360
                         k += 1
 
             # Observe environment
@@ -126,18 +124,20 @@ class Agent:
                 self.tick_reward += 100
                 print("Reward: +100")
             self.zombies_alive = cur_zombies_alive
+            self.zombie_los_in_range = 0
+            self.zombie_los = 0
             if u'LineOfSight' in ob:
                 los = ob[u'LineOfSight']
                 if los[u'hitType'] == "entity" and los[u'inRange'] and los[u'type'] == "Zombie":
                     self.zombie_los_in_range = 1
                 elif los[u'hitType'] == "entity" and los[u'type'] == "Zombie":
                     self.zombie_los = 1
-            if ob[u'TimeAlive'] != 0:
-                self.survival_time_score = ob[u'TimeAlive']
+            # if ob[u'TimeAlive'] != 0:
+            #     self.survival_time_score = ob[u'TimeAlive']
             if "Life" in ob:
                 life = ob[u'Life']
-                if round(life) != round(self.current_life):
-                    self.current_life = round(life)
+                if life != self.current_life:
+                    self.current_life = life
                     # Here Agent got hit and lost life, so we will punish him
                     self.tick_reward -= 5
                     # print("Life changed: -5 reward")
@@ -156,11 +156,6 @@ class Agent:
                       self.zombies_pos[2][0], self.zombies_pos[2][1]]
         self.total_reward += self.tick_reward  # Update total reward, never restore to 0
         self.episode_reward += self.tick_reward  # Update reward per episode, restore to 0 after each episode ends
-
-    def update_per_tick(self):
-        self.tick_reward = 0  # Restore reward per tick, since tick ended
-        time.sleep(MS_PER_TICK * 0.000001)  # Wait a bit based on how quick we run loop
-
 
     def update_per_episode(self):
         self.survival_time.append(self.survival_time_score)
@@ -189,24 +184,28 @@ class Agent:
         self.print_finish_data()
         self.episode_reward = 0
         self.zombies_alive = NUM_MOBS
-        self.zombie_los = 0
-        self.zombie_los_in_range = 0
-        self.current_pos = [0, 0]
-        self.current_life = 20
-        self.yaw = 0
-        self.zombie_yaw = [0, 0, 0]
-        self.zombies_pos = [[0, 0], [0, 0], [0, 0]]
+        self.reset_state()
         self.state = [self.zombie_los_in_range, self.zombie_los, self.current_pos[0]
             , self.current_pos[1], self.current_life, self.yaw, self.zombie_yaw[0], self.zombie_yaw[1], self.zombie_yaw[2]
             , self.zombies_pos[0][0], self.zombies_pos[0][1], self.zombies_pos[1][0], self.zombies_pos[1][1],
                       self.zombies_pos[2][0], self.zombies_pos[2][1]]
+
+    def reset_state(self):
+        self.zombie_los = 0
+        self.zombie_los_in_range = 0
+        self.current_life = 20
+        self.current_pos = [0, 0]
+        self.yaw = 0
+        self.zombies_pos = [[0, 0], [0, 0], [0, 0]]
+        self.zombie_yaw = [0, 0, 0]
+
     def print_finish_data(self):
         print()
         print("=========================================")
         print("Episode Reward:", self.episode_reward)
         # print("Total Reward:", self.total_reward)
         print("Player life: ", self.current_life)
-        print("Survival time score: ", self.survival_time_score)
+        # print("Survival time score: ", self.survival_time_score)
         print("Zombie kill score: ", self.zombie_kill_score)
         print("=========================================")
         print()

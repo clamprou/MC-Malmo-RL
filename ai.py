@@ -69,7 +69,7 @@ TAU = 0.005
 LR = 1e-3
 
 # Get number of actions from gym action space
-n_actions = 8
+n_actions = 7
 # Get the number of state observations
 n_observations = 15
 
@@ -97,7 +97,7 @@ def select_action(state):
             # found, so we pick action with the larger expected reward.
             return policy_net(state).max(1)[1].view(1, 1)
     else:
-        return torch.tensor([[random.randint(0, 7)]], device=device, dtype=torch.long)
+        return torch.tensor([[random.randint(0, 6)]], device=device, dtype=torch.long)
 
 
 episode_durations = []
