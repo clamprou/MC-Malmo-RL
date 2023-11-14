@@ -80,18 +80,18 @@ class Agent:
             self.malmo_agent.sendCommand("attack 0")
         elif action == "turn 0.3" or action == "turn -0.3":
             self.malmo_agent.sendCommand(action)
-            time.sleep(MS_PER_TICK * 0.0002)
+            time.sleep(MS_PER_TICK * 0.0016)
             self.malmo_agent.sendCommand("turn 0")
         elif action == "move 1" or action == "move -1":
             self.malmo_agent.sendCommand(action)
-            time.sleep(MS_PER_TICK * 0.0002)
+            time.sleep(MS_PER_TICK * 0.0025)
             self.malmo_agent.sendCommand("move 0")
         elif action == "strafe 1" or action == "strafe -1":
             self.malmo_agent.sendCommand(action)
-            time.sleep(MS_PER_TICK * 0.0002)
+            time.sleep(MS_PER_TICK * 0.0032)
             self.malmo_agent.sendCommand("strafe 0")
         elif action == "None":
-            time.sleep(MS_PER_TICK * 0.0002)
+            time.sleep(MS_PER_TICK * 0.02)
 
     def observe_env(self):
         world_state = self.malmo_agent.getWorldState()
@@ -204,7 +204,7 @@ class Agent:
         print()
         print("=========================================")
         print("Episode Reward:", self.episode_reward)
-        print("Total Reward:", self.total_reward)
+        # print("Total Reward:", self.total_reward)
         print("Player life: ", self.current_life)
         print("Survival time score: ", self.survival_time_score)
         print("Zombie kill score: ", self.zombie_kill_score)
@@ -393,7 +393,7 @@ plt.ion()
 def plot_table(table , variable,show_result=False):
     is_ipython = 'inline' in matplotlib.get_backend()
     plt.figure(1)
-    durations_t = torch.tensor(table, dtype=torch.float)
+    values = torch.tensor(table, dtype=torch.float)
     if show_result:
         plt.title('Result')
     else:
@@ -401,10 +401,10 @@ def plot_table(table , variable,show_result=False):
         plt.title('Training...')
     plt.xlabel('Episode')
     plt.ylabel(variable)
-    plt.plot(durations_t.numpy())
+    plt.plot(values.numpy())
     # Take 100 episode averages and plot them too
-    if len(durations_t) >= 100:
-        means = durations_t.unfold(0, 100, 1).mean(1).view(-1)
+    if len(values) >= 100:
+        means = values.unfold(0, 100, 1).mean(1).view(-1)
         means = torch.cat((torch.zeros(99), means))
         plt.plot(means.numpy())
 
